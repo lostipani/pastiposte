@@ -6,7 +6,7 @@ services:
     networks:
       - local-network
     ports:
-      - "15672:5672"
+      - "35672:5672"
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 30s
@@ -55,7 +55,7 @@ services:
       CONSUMER_PERIOD: 1
 
   client-multiprocess-listener-1:
-    profiles: [ 'OFFmultiprocess' ]
+    profiles: [ 'multiprocess' ]
     build:
       context: ./
       dockerfile: client_multiprocess/listener/Dockerfile
@@ -93,7 +93,7 @@ services:
       - local-network
     environment:
       HTTP_URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      FETCHER_PERIOD: 60
+      FETCHER_PERIOD: 10
       BROKER_HOST: "rabbitmq"
     depends_on:
       rabbitmq:

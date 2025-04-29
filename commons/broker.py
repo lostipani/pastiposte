@@ -119,15 +119,15 @@ class BrokerRabbitMQ(Broker):
 
     def get(self, **kwargs) -> Value:
         self.channel.queue_declare(
-            queue=self.params.get("queue"), exclusive=True
+            queue=kwargs.get("queue"), exclusive=True
         )
         self.channel.queue_bind(
             exchange=self.params.get("exchange"),
-            queue=self.params.get("queue"),
-            routing_key=self.params.get("routing_key"),
+            queue=kwargs.get("queue"),
+            routing_key=kwargs.get("routing_key"),
         )
         self.channel.basic_consume(
-            queue=self.params.get("queue"),
+            queue=kwargs.get("queue"),
             on_message_callback=kwargs.get("callback"),
             auto_ack=True,
         )

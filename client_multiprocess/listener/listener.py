@@ -14,7 +14,7 @@ def listener(URI: str, broker: Broker, period: float) -> None:
         This is the action of the listener
         """
         data = {"source": URI, "message": json.loads(message)}
-        broker.add(str(data))
+        broker.add(str(data), routing_key="listener")
 
     try:
         with connect(URI) as websocket:
@@ -34,10 +34,8 @@ if __name__ == "__main__":
     broker_params = get_broker_params()
     broker = Broker.factory(
         backend="rabbitmq",
-        queue="test",
         host=broker_params.get("host"),
-        routing_key="test",
-        exchange="listener",
+        exchange="x",
         exchange_type="direct",
     )
     main(broker)
