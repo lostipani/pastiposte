@@ -14,47 +14,15 @@ services:
       start_period: 10s
       retries: 3
 
-  client-synchro:
-    profiles: [ 'synchro' ]
+  spark:
+    profiles: [ 'multiprocess' ]
     build:
       context: ./
-      dockerfile: client_synchro/Dockerfile
+      dockerfile: client_multiprocess/spark/Dockerfile
     networks:
       - local-network
-    environment:
-      WS_HOST: "server"
-      WS_PORT: 12345
-      LOGLEVEL: "INFO"
 
-  client-asyncio:
-    profiles: [ 'asyncio' ]
-    build:
-      context: ./
-      dockerfile: client_asyncio/Dockerfile
-    networks:
-      - local-network
-    environment:
-      WS_HOST: "wss://stream.binance.com"
-      WS_PORT: 9443
-      LOGLEVEL: "DEBUG"
-      LISTENER_PERIOD: 0.1
-      CONSUMER_PERIOD: 0.5
-
-  client-multithreading:
-    profiles: [ 'multithreading' ]
-    build:
-      context: ./
-      dockerfile: client_multithreading/Dockerfile
-    networks:
-      - local-network
-    environment:
-      WS_HOST: "server"
-      WS_PORT: 12345
-      LOGLEVEL: "INFO"
-      LISTENER_PERIOD: 4
-      CONSUMER_PERIOD: 1
-
-  client-multiprocess-listener-1:
+  client-multiprocess-listener:
     profiles: [ 'multiprocess' ]
     build:
       context: ./
@@ -69,31 +37,15 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  client-multiprocess-listener-2:
+  client-multiprocess-loader:
     profiles: [ 'OFFmultiprocess' ]
     build:
       context: ./
-      dockerfile: client_multiprocess/listener/Dockerfile
+      dockerfile: client_multiprocess/loader/Dockerfile
     networks:
       - local-network
     environment:
-      WS_URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
       LISTENER_PERIOD: 0
-      BROKER_HOST: "rabbitmq"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  client-multiprocess-fetcher:
-    profiles: [ 'multiprocess' ]
-    build:
-      context: ./
-      dockerfile: client_multiprocess/fetcher/Dockerfile
-    networks:
-      - local-network
-    environment:
-      HTTP_URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      FETCHER_PERIOD: 10
       BROKER_HOST: "rabbitmq"
     depends_on:
       rabbitmq:
