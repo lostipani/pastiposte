@@ -45,9 +45,13 @@ def get_consumer_period() -> float:
         raise
 
 
-def get_broker_params() -> Dict[str, Any]:
+def get_rabbitmq_params() -> Dict[str, str]:
     try:
-        return {"host": (os.environ["BROKER_HOST"])}
+        return {
+            env.replace("BROKER_", "").lower(): os.environ[env]
+            for env in os.environ
+            if "BROKER_" in env.upper()
+        }
     except KeyError:
-        logging.error("missing broker's hostname")
+        logging.error("missing RabbitMQ parameter(s)")
         raise

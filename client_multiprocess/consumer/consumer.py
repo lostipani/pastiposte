@@ -1,8 +1,9 @@
 import time
 
 from commons.logger import logger
-from commons.parser import get_broker_params, get_consumer_period
+from commons.parser import get_consumer_period
 from commons.broker import Broker
+from rabbitmq import broker
 
 
 def consumer(broker: Broker, period: float):
@@ -22,7 +23,7 @@ def consumer(broker: Broker, period: float):
         time.sleep(period)
 
     broker.get(callback=callback_fun, queue="http", routing_key="fetcher")
-    broker.get(callback=callback_fun, queue="ws", routing_key="listener")
+    # broker.get(callback=callback_fun, queue="ws", routing_key="listener")
 
 
 def main(broker: Broker) -> None:
@@ -30,11 +31,4 @@ def main(broker: Broker) -> None:
 
 
 if __name__ == "__main__":
-    broker_params = get_broker_params()
-    broker = Broker.factory(
-        backend="rabbitmq",
-        host=broker_params.get("host"),
-        exchange="x",
-        exchange_type="direct",
-    )
     main(broker)
