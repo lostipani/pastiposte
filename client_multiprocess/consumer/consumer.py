@@ -22,8 +22,7 @@ def consumer(broker: Broker, period: float):
         action(body.decode("utf-8"))
         time.sleep(period)
 
-    broker.get(callback=callback_fun, queue="http", routing_key="fetcher")
-    # broker.get(callback=callback_fun, queue="ws", routing_key="listener")
+    broker.get(callback=callback_fun, queue="ws", routing_key="listener")
 
 
 def main(broker: Broker) -> None:
