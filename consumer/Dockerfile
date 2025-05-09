@@ -6,7 +6,6 @@ RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
 WORKDIR /app
 COPY __init__.py /app
 COPY commons /app/commons
-COPY client_multiprocess/fetcher /app/fetcher
-COPY client_multiprocess/rabbitmq.py /app/rabbitmq.py
+COPY consumer /app/consumer
 
-CMD ["python", "-m", "fetcher.fetcher"]
+CMD ["python", "-m", "consumer.consumer"]

@@ -5,7 +5,7 @@ from websockets.sync.client import connect
 from commons.logger import logger
 from commons.parser import get_URI, get_listener_period
 from commons.broker import Broker
-from rabbitmq import broker
+from commons.rabbitmq import broker
 
 
 def listener(URI: str, broker: Broker, period: float) -> None:
@@ -15,7 +15,7 @@ def listener(URI: str, broker: Broker, period: float) -> None:
         This is the action of the listener
         """
         data = {"source": URI, "message": json.loads(message)}
-        broker.add(str(data), routing_key="listener")
+        broker.add(str(data))
 
     try:
         with connect(URI) as websocket:

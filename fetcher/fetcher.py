@@ -7,7 +7,7 @@ from retry import retry
 from commons.logger import logger
 from commons.parser import get_URI, get_fetcher_period
 from commons.broker import Broker
-from rabbitmq import broker
+from commons.rabbitmq import broker
 
 
 def fetcher(URI: str, broker: Broker, period: float) -> None:

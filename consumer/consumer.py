@@ -3,7 +3,7 @@ import time
 from commons.logger import logger
 from commons.parser import get_consumer_period
 from commons.broker import Broker
-from rabbitmq import broker
+from commons.rabbitmq import broker
 
 
 def consumer(broker: Broker, period: float):
@@ -22,7 +22,7 @@ def consumer(broker: Broker, period: float):
         action(body.decode("utf-8"))
         time.sleep(period)
 
-    broker.get(callback=callback_fun, queue="ws", routing_key="listener")
+    broker.get(callback=callback_fun)
 
 
 def main(broker: Broker) -> None:
