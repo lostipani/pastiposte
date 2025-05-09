@@ -3,8 +3,9 @@ import time
 from websockets.sync.client import connect
 
 from commons.logger import logger
-from commons.parser import get_URI, get_listener_period, get_broker_params
+from commons.parser import get_URI, get_listener_period
 from commons.broker import Broker
+from rabbitmq import broker
 
 
 def listener(URI: str, broker: Broker, period: float) -> None:
@@ -31,11 +32,4 @@ def main(broker: Broker):
 
 
 if __name__ == "__main__":
-    broker_params = get_broker_params()
-    broker = Broker.factory(
-        backend="rabbitmq",
-        host=broker_params.get("host"),
-        exchange="x",
-        exchange_type="direct",
-    )
     main(broker)

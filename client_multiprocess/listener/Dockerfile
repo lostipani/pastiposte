@@ -7,5 +7,6 @@ WORKDIR /app
 COPY __init__.py /app
 COPY commons /app/commons
 COPY client_multiprocess/listener /app/listener
+COPY client_multiprocess/rabbitmq.py /app/rabbitmq.py
 
 CMD ["python", "-m", "listener.listener"]

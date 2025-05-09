@@ -1,4 +1,3 @@
-import json
 import time
 from typing import Any, Dict
 import requests
@@ -6,8 +5,9 @@ from requests.exceptions import HTTPError
 from retry import retry
 
 from commons.logger import logger
-from commons.parser import get_URI, get_fetcher_period, get_broker_params
+from commons.parser import get_URI, get_fetcher_period
 from commons.broker import Broker
+from rabbitmq import broker
 
 
 def fetcher(URI: str, broker: Broker, period: float) -> None:
@@ -19,7 +19,7 @@ def fetcher(URI: str, broker: Broker, period: float) -> None:
         data = {"source": URI, "message": message}
         broker.add(str(data), routing_key="fetcher")
 
-    @retry(HTTPError, tries=3, delay=2)
+    @retry(HTTPError, tries=3, delay=2, logger=logger)
     def get(URI: str) -> Dict[str, Any]:
         response = requests.get(URI)
         response.raise_for_status()
@@ -36,11 +36,4 @@ def main(broker: Broker):
 
 
 if __name__ == "__main__":
-    broker_params = get_broker_params()
-    broker = Broker.factory(
-        backend="rabbitmq",
-        host=broker_params.get("host"),
-        exchange="x",
-        exchange_type="direct",
-    )
     main(broker)
