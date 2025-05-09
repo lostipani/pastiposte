@@ -1,5 +1,25 @@
 services:
 
+  server:
+    profiles: [ 'OFF' ]
+    build:
+      context: ./
+      dockerfile: server/Dockerfile
+    networks:
+      - local-network
+    ports:
+      - "12345:12345"
+    environment:
+      WS_PORT: 12345
+      LOG_LEVEL: "INFO"
+      PERIOD: 1
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:12345/healthcheck" ]
+      interval: 30s
+      timeout: 30s
+      start_period: 10s
+      retries: 3
+
   rabbitmq:
     profiles: [ 'multiprocess' ]
     image: rabbitmq:4
@@ -53,7 +73,7 @@ services:
         condition: service_healthy
 
   fetcher:
-    profiles: [ 'OFFmultiprocess' ]
+    profiles: [ 'OFF' ]
     build:
       context: ./
       dockerfile: fetcher/Dockerfile
