@@ -1,7 +1,7 @@
 services:
 
-  server:
-    profiles: [ 'OFF' ]
+  server-sim:
+    profiles: [ 'simulation' ]
     build:
       context: ./
       dockerfile: server/Dockerfile
@@ -20,8 +20,49 @@ services:
       start_period: 10s
       retries: 3
 
+  listener-ws-sim:
+    profiles: [ 'simulation' ]
+    build:
+      context: ./
+      dockerfile: listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "ws://server-sim:12345/ws"
+      PERIOD: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY: "simulation"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server-sim:
+        condition: service_healthy
+
+  consumer-sim:
+    profiles: [ 'simulation' ]
+    build:
+      context: ./
+      dockerfile: consumer/Dockerfile
+    networks:
+      - local-network
+    environment:
+      PERIOD: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY: "simulation"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server-sim:
+        condition: service_healthy
+
   rabbitmq:
-    profiles: [ 'multiprocess' ]
+    profiles: [ 'real-world', 'simulation' ]
     image: rabbitmq:4
     networks:
       - local-network
@@ -34,15 +75,15 @@ services:
       start_period: 10s
       retries: 3
 
-  listener-1:
-    profiles: [ 'multiprocess' ]
+  listener-ws-1:
+    profiles: [ 'real-world' ]
     build:
       context: ./
       dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
-      WS_URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
+      URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
       PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
@@ -53,15 +94,15 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  listener-2:
-    profiles: [ 'multiprocess' ]
+  listener-ws-2:
+    profiles: [ 'real-world' ]
     build:
       context: ./
       dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
-      WS_URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
+      URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
       PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
@@ -72,26 +113,27 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  fetcher:
-    profiles: [ 'OFF' ]
+  listener-http:
+    profiles: [ 'real-world' ]
     build:
       context: ./
-      dockerfile: fetcher/Dockerfile
+      dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
-      HTTP_URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      PERIOD: 10
+      URL: "https://api.frankfurter.dev/v1/latest?base=USD"
+      PERIOD: 1
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY: "frankfurter"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
   consumer:
-    profiles: [ 'multiprocess' ]
+    profiles: [ 'real-world' ]
     build:
       context: ./
       dockerfile: consumer/Dockerfile
@@ -102,7 +144,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "trade, kline_1m"
+      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:

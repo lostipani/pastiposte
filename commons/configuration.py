@@ -3,14 +3,16 @@ from typing import Dict
 from .logger import logging
 
 
-def get_URI() -> str:
-    if uri := os.environ.get("WS_URL", None):
-        return str(uri)
-    elif uri := os.environ.get("HTTP_URL", None):
-        return str(uri)
-    else:
-        logging.error("missing URL to server")
-        raise KeyError
+class MissingParametersException(Exception):
+    pass
+
+
+def get_URL() -> str:
+    try:
+        return str(os.environ.get("URL", None))
+    except KeyError:
+        logging.error("missing URL")
+        raise MissingParametersException
 
 
 def get_period() -> float:
@@ -18,7 +20,7 @@ def get_period() -> float:
         return float(os.environ["PERIOD"])
     except KeyError:
         logging.error("missing period, in seconds")
-        raise
+        raise MissingParametersException
 
 
 def get_rabbitmq_params() -> Dict[str, str]:
@@ -30,4 +32,4 @@ def get_rabbitmq_params() -> Dict[str, str]:
         }
     except KeyError:
         logging.error("missing RabbitMQ parameter(s)")
-        raise
+        raise MissingParametersException
