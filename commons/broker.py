@@ -107,10 +107,10 @@ class BrokerRabbitMQ(Broker):
             exchange_type=self.params.get("exchange_type"),
         )
 
-    def add(self, value: Value, **kwargs):
+    def add(self, value: Value):
         self.channel.basic_publish(
             exchange=self.params.get("exchange"),
-            routing_key=kwargs.get("routing_key"),
+            routing_key=self.params.get("routing_key"),
             body=value,
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
@@ -118,19 +118,21 @@ class BrokerRabbitMQ(Broker):
         )
 
     def get(self, **kwargs) -> Value:
-        self.channel.queue_declare(
-            queue=kwargs.get("queue"), exclusive=True
-        )
-        self.channel.queue_bind(
-            exchange=self.params.get("exchange"),
-            queue=kwargs.get("queue"),
-            routing_key=kwargs.get("routing_key"),
-        )
-        self.channel.basic_consume(
-            queue=kwargs.get("queue"),
-            on_message_callback=kwargs.get("callback"),
-            auto_ack=True,
-        )
+        for routing_key in (
+            rkey.strip() for rkey in self.params["routing_key"].split(",")
+        ):
+            queue_name = f"{routing_key}_queue"
+            self.channel.queue_declare(queue=queue_name, exclusive=True)
+            self.channel.queue_bind(
+                exchange=self.params.get("exchange"),
+                queue=queue_name,
+                routing_key=routing_key,
+            )
+            self.channel.basic_consume(
+                queue=queue_name,
+                on_message_callback=kwargs.get("callback"),
+                auto_ack=True,
+            )
         self.channel.start_consuming()
 
     def is_empty(self) -> bool:

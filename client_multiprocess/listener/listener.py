@@ -15,7 +15,7 @@ def listener(URI: str, broker: Broker, period: float) -> None:
         This is the action of the listener
         """
         data = {"source": URI, "message": json.loads(message)}
-        broker.add(str(data), routing_key="listener")
+        broker.add(str(data))
 
     try:
         with connect(URI) as websocket:

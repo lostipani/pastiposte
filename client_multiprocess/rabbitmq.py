@@ -7,4 +7,5 @@ broker = Broker.factory(
     host=broker_params.get("host"),
     exchange=broker_params.get("exchange"),
     exchange_type=broker_params.get("exchange_type"),
+    routing_key=broker_params.get("routing_key"),
 )
