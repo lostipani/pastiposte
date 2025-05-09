@@ -3,7 +3,7 @@ import time
 from websockets.sync.client import connect
 
 from commons.logger import logger
-from commons.parser import get_URI, get_listener_period
+from commons.configuration import get_URI, get_period
 from commons.broker import Broker
 from commons.rabbitmq import broker
 
@@ -28,7 +28,7 @@ def listener(URI: str, broker: Broker, period: float) -> None:
 
 
 def main(broker: Broker):
-    listener(get_URI(), broker, get_listener_period())
+    listener(get_URI(), broker, get_period())
 
 
 if __name__ == "__main__":

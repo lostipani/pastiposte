@@ -47,6 +47,6 @@ if __name__ == "__main__":
         "server.server:app",
         host="0.0.0.0",
         port=int(os.getenv("WS_PORT", 12345)),
-        log_level=str(os.getenv("LOGLEVEL", "info")).lower(),
+        log_level=str(os.getenv("LOG_LEVEL", "info")).lower(),
         ws="websockets",
     )

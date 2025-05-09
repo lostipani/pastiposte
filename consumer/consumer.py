@@ -1,7 +1,7 @@
 import time
 
 from commons.logger import logger
-from commons.parser import get_consumer_period
+from commons.configuration import get_period
 from commons.broker import Broker
 from commons.rabbitmq import broker
 
@@ -26,7 +26,7 @@ def consumer(broker: Broker, period: float):
 
 
 def main(broker: Broker) -> None:
-    consumer(broker, get_consumer_period())
+    consumer(broker, get_period())
 
 
 if __name__ == "__main__":

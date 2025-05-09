@@ -1,5 +1,25 @@
 services:
 
+  server:
+    profiles: [ 'OFF' ]
+    build:
+      context: ./
+      dockerfile: server/Dockerfile
+    networks:
+      - local-network
+    ports:
+      - "12345:12345"
+    environment:
+      WS_PORT: 12345
+      LOG_LEVEL: "INFO"
+      PERIOD: 1
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:12345/healthcheck" ]
+      interval: 30s
+      timeout: 30s
+      start_period: 10s
+      retries: 3
+
   rabbitmq:
     profiles: [ 'multiprocess' ]
     image: rabbitmq:4
@@ -23,7 +43,7 @@ services:
       - local-network
     environment:
       WS_URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
-      LISTENER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -42,7 +62,7 @@ services:
       - local-network
     environment:
       WS_URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
-      LISTENER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -53,7 +73,7 @@ services:
         condition: service_healthy
 
   fetcher:
-    profiles: [ 'OFFmultiprocess' ]
+    profiles: [ 'OFF' ]
     build:
       context: ./
       dockerfile: fetcher/Dockerfile
@@ -61,7 +81,7 @@ services:
       - local-network
     environment:
       HTTP_URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      FETCHER_PERIOD: 10
+      PERIOD: 10
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -78,7 +98,7 @@ services:
     networks:
       - local-network
     environment:
-      CONSUMER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
