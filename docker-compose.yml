@@ -23,7 +23,7 @@ services:
       - local-network
     environment:
       WS_URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
-      LISTENER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -42,7 +42,7 @@ services:
       - local-network
     environment:
       WS_URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
-      LISTENER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -61,7 +61,7 @@ services:
       - local-network
     environment:
       HTTP_URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      FETCHER_PERIOD: 10
+      PERIOD: 10
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -78,7 +78,7 @@ services:
     networks:
       - local-network
     environment:
-      CONSUMER_PERIOD: 0
+      PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"

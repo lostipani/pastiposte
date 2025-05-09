@@ -1,6 +1,6 @@
 import abc
 from queue import Queue
-from typing import Any, Callable, List
+from typing import Any, List
 import pika
 
 
