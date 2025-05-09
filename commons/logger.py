@@ -3,6 +3,6 @@ import logging
 
 logging.basicConfig(
     format="%(message)s",
-    level=os.getenv("LOGLEVEL", "INFO"),
+    level=os.getenv("LOG_LEVEL", "INFO"),
 )
 logger = logging.getLogger("uvicorn.error")

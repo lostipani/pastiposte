@@ -5,7 +5,7 @@ from websockets.sync.client import connect
 from commons.logger import logger
 from commons.parser import get_URI, get_listener_period
 from commons.broker import Broker
-from rabbitmq import broker
+from commons.rabbitmq import broker
 
 
 def listener(URI: str, broker: Broker, period: float) -> None:

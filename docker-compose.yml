@@ -14,51 +14,11 @@ services:
       start_period: 10s
       retries: 3
 
-  client-synchro:
-    profiles: [ 'synchro' ]
-    build:
-      context: ./
-      dockerfile: client_synchro/Dockerfile
-    networks:
-      - local-network
-    environment:
-      WS_HOST: "server"
-      WS_PORT: 12345
-      LOGLEVEL: "INFO"
-
-  client-asyncio:
-    profiles: [ 'asyncio' ]
-    build:
-      context: ./
-      dockerfile: client_asyncio/Dockerfile
-    networks:
-      - local-network
-    environment:
-      WS_HOST: "wss://stream.binance.com"
-      WS_PORT: 9443
-      LOGLEVEL: "DEBUG"
-      LISTENER_PERIOD: 0.1
-      CONSUMER_PERIOD: 0.5
-
-  client-multithreading:
-    profiles: [ 'multithreading' ]
-    build:
-      context: ./
-      dockerfile: client_multithreading/Dockerfile
-    networks:
-      - local-network
-    environment:
-      WS_HOST: "server"
-      WS_PORT: 12345
-      LOGLEVEL: "INFO"
-      LISTENER_PERIOD: 4
-      CONSUMER_PERIOD: 1
-
-  client-multiprocess-listener-1:
+  listener-1:
     profiles: [ 'multiprocess' ]
     build:
       context: ./
-      dockerfile: client_multiprocess/listener/Dockerfile
+      dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -68,15 +28,16 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "trade"
+      LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  client-multiprocess-listener-2:
+  listener-2:
     profiles: [ 'multiprocess' ]
     build:
       context: ./
-      dockerfile: client_multiprocess/listener/Dockerfile
+      dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -86,15 +47,16 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "kline_1m"
+      LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  client-multiprocess-fetcher:
+  fetcher:
     profiles: [ 'OFFmultiprocess' ]
     build:
       context: ./
-      dockerfile: client_multiprocess/fetcher/Dockerfile
+      dockerfile: fetcher/Dockerfile
     networks:
       - local-network
     environment:
@@ -103,24 +65,25 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
+      LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  client-multiprocess-consumer:
+  consumer:
     profiles: [ 'multiprocess' ]
     build:
       context: ./
-      dockerfile: client_multiprocess/consumer/Dockerfile
+      dockerfile: consumer/Dockerfile
     networks:
       - local-network
     environment:
-      LOGLEVEL: "INFO"
       CONSUMER_PERIOD: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "trade, kline_1m"
+      LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy

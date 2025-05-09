@@ -3,7 +3,7 @@ import time
 from commons.logger import logger
 from commons.parser import get_consumer_period
 from commons.broker import Broker
-from rabbitmq import broker
+from commons.rabbitmq import broker
 
 
 def consumer(broker: Broker, period: float):
