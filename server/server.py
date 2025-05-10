@@ -7,7 +7,7 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, status
 from fastapi.websockets import WebSocketDisconnect
 
-from commons.configuration import get_period
+from commons.configuration import get_sleep
 from commons.logger import logger
 
 app = FastAPI()
@@ -27,7 +27,7 @@ async def ws_endpoint(websocket: WebSocket):
             await websocket.send_json(data)
         except WebSocketDisconnect:
             break
-        await asyncio.sleep(get_period())
+        await asyncio.sleep(get_sleep())
 
 
 @app.get("/http")

@@ -15,11 +15,11 @@ def get_URL() -> str:
         raise MissingParametersException
 
 
-def get_period() -> float:
+def get_sleep() -> float:
     try:
-        return float(os.environ["PERIOD"])
+        return float(os.environ["SLEEP"])
     except KeyError:
-        logging.error("missing period, in seconds")
+        logging.error("missing SLEEP, in seconds")
         raise MissingParametersException
 
 

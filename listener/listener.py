@@ -9,7 +9,7 @@ from retry import retry
 from websockets.sync.client import connect
 
 from commons.logger import logger
-from commons.configuration import get_URL, get_period
+from commons.configuration import get_URL, get_sleep
 from commons.broker import Broker
 from commons.rabbitmq import broker
 
@@ -34,7 +34,7 @@ class ListenerWS(Listener):
         super().__init__()
         self.url = url
 
-    def run(self, broker: Broker, period: float):
+    def run(self, broker: Broker, sleep: float):
         def _action(message) -> None:
             """
             This is the action of the listener
@@ -47,7 +47,7 @@ class ListenerWS(Listener):
             with connect(self.url) as websocket:
                 for message in websocket:
                     _action(message)
-                    time.sleep(period)
+                    time.sleep(sleep)
         except ConnectionRefusedError as error:
             logger.error(error)
             raise
@@ -58,7 +58,7 @@ class ListenerHTTP(Listener):
         super().__init__()
         self.url = url
 
-    def run(self, broker: Broker, period: float):
+    def run(self, broker: Broker, sleep: float):
         def _action(message) -> None:
             """
             This is the action of the listener
@@ -74,12 +74,12 @@ class ListenerHTTP(Listener):
         while True:
             message = _get(self.url)
             _action(message)
-            time.sleep(period)
+            time.sleep(sleep)
 
 
 def main(broker: Broker):
     listener = Listener.factory(get_URL())
-    listener.run(broker, get_period())
+    listener.run(broker, get_sleep())
 
 
 if __name__ == "__main__":
