@@ -26,10 +26,10 @@ classDiagram
     Listener <|.. ListenerHTTP
     Listener: +factory(url)
     class ListenerWS{
-        +run
+        +run()
     }
     class ListenerHTTP{
-        +run
+        +run()
     }
 ```
 
