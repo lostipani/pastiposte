@@ -24,7 +24,7 @@ docker compose --profile simulation up --build
 classDiagram
     Listener <|.. ListenerWS
     Listener <|.. ListenerHTTP
-    Listener: +factory(backend)
+    Listener: +factory(url)
     class ListenerWS{
         +run
     }
