@@ -3,11 +3,6 @@ from queue import Queue
 from typing import Any, List
 import pika
 
-
-class BrokerNotImplementedError:
-    pass
-
-
 Value = Any
 
 
@@ -44,7 +39,7 @@ class Broker(object):
         elif isinstance(backend, str) and backend.lower() == "rabbitmq":
             return BrokerRabbitMQ(**kwargs)
         else:
-            raise BrokerNotImplementedError
+            raise NotImplementedError
 
     @abc.abstractmethod
     def add(self, value: Value, **kwargs):
