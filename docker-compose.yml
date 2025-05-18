@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 
   server-sim:
@@ -74,6 +76,41 @@ services:
       timeout: 30s
       start_period: 10s
       retries: 3
+
+  spark-master:
+    profiles: [ 'real-world', 'simulation' ]
+    build:
+      context: .
+      dockerfile: transforming-loading/spark/Dockerfile
+    entrypoint: [ './entrypoint.sh', 'master' ]
+    networks:
+      - local-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+    env_file:
+      - transforming-loading/spark/env.spark
+    ports:
+      - '9090:8080'
+      - '7077:7077'
+  spark-worker:
+    profiles: [ 'real-world', 'simulation' ]
+    build:
+      context: .
+      dockerfile: transforming-loading/spark/Dockerfile
+    entrypoint: [ './entrypoint.sh', 'worker' ]
+    networks:
+      - local-network
+    depends_on:
+      - spark-master
+    env_file:
+      - transforming-loading/spark/env.spark
+    volumes:
+      - spark-logs:/opt/spark/spark-events
 
   listener-ws-1:
     profiles: [ 'real-world' ]
@@ -153,3 +190,6 @@ services:
 networks:
   local-network:
     driver: bridge
+
+volumes:
+  spark-logs:

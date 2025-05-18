@@ -1,11 +1,26 @@
-# A producer-consumer service for multi-sources data
+# An ETL case for multi-source and multi-consumer services
 ```mermaid
-flowchart TD
-  listHTTP@{ shape: rect, label: "listener HTTP" } --> s1@{ shape: doc, label: "source HTTP" }
-  listWS@{ shape: rect, label: "listener WS" } --> s2@{ shape: doc, label: "source WS" }
+flowchart LR
+  subgraph Extracting
+  listHTTP@{ shape: rect, label: "Listener HTTP" } --> s1@{ shape: lean-r, label: "source HTTP" }
+  listWS@{ shape: rect, label: "Listener WS" } --> s2@{ shape: lean-r, label: "source WS" }
+  end
+
   listHTTP & listWS --> exc@{ shape: hex, label: "Exchange" }
-  exc --> q1@{ shape: subproc, label: "queue key1" } --> analyst
-  exc --> q2@{ shape: subproc, label: "queue key2" } --> analyst
+  exc --> q1@{ shape: das, label: "queue key1" }
+  exc --> q2@{ shape: das, label: "queue key2" }
+
+  subgraph Consuming
+  q1 & q2 --> Consumer
+  end
+
+  exc --> q3@{ shape: das, label: "queue key99"}
+
+  subgraph Transforming/Loading
+  q3 --> Loader
+  Loader --> Spark@{ shape: processes, label: "Spark"}
+  Spark --> db@{ shape: cyl, label: "DB"}
+  end
 ```
 
 ## How to run
@@ -18,8 +33,18 @@ docker compose --profile real-world up --build
 docker compose --profile simulation up --build
 ```
 
-## Components
-### Listener
+## Architecture
+
+### Built on
+* Python3.12
+* Websocket
+* HTTP
+* RabbitMQ
+* Spark
+* Docker
+
+### Components
+#### Listener
 ```mermaid
 classDiagram
     Listener <|.. ListenerWS
@@ -33,7 +58,7 @@ classDiagram
     }
 ```
 
-### Broker
+#### Broker
 ```mermaid
 classDiagram
     class Broker
