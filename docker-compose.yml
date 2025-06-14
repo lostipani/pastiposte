@@ -84,7 +84,7 @@ services:
       - local-network
     environment:
       URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
-      SLEEP: 0
+      SLEEP: 0.1
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -103,11 +103,31 @@ services:
       - local-network
     environment:
       URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
-      SLEEP: 0
+      SLEEP: 0.1
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "kline_1m"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  listener-ws-3:
+    profiles: [ 'real-world' ]
+    build:
+      context: ./
+      dockerfile: listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+#      URL: "wss://stream.binance.com:9443/stream?streams=adausdt@kline_1m/solusdt@kline_1m"
+      URL: "wss://stream.binance.com:9443/stream?streams=solusdt@kline_1m"
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY: "kline_sol_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -132,11 +152,30 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  consumer:
+#  consumer-general:
+#    profiles: [ 'real-world' ]
+#    build:
+#      context: ./
+#      dockerfile: consumer/Dockerfile
+#    networks:
+#      - local-network
+#    environment:
+#      SLEEP: 0
+#      BROKER_HOST: "rabbitmq"
+#      BROKER_EXCHANGE: "exchange"
+#      BROKER_EXCHANGE_TYPE: "direct"
+#      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
+#      LOG_LEVEL: "INFO"
+#    depends_on:
+#      rabbitmq:
+#        condition: service_healthy
+
+  consumer-sol:
     profiles: [ 'real-world' ]
     build:
       context: ./
       dockerfile: consumer/Dockerfile
+    command: python -m consumer.consumer_analyst  # runs the consumer_analyst
     networks:
       - local-network
     environment:
@@ -144,12 +183,12 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
+      BROKER_ROUTING_KEY: "kline_sol_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
-
+      
 networks:
   local-network:
     driver: bridge
