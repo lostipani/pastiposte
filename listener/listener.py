@@ -26,6 +26,7 @@ class Listener:
         elif urlparse(url).scheme in {"http", "https"}:
             return ListenerHTTP(url)
         else:
+            logger.error("URL schema not implemented in Listener")
             raise NotImplementedError
 
 
@@ -39,9 +40,7 @@ class ListenerWS(Listener):
             """
             This is the action of the listener
             """
-            broker.add(
-                str({"source": self.url, "message": json.loads(message)})
-            )
+            broker.add({"source": self.url, "message": json.loads(message)})
 
         try:
             with connect(self.url) as websocket:
@@ -63,7 +62,7 @@ class ListenerHTTP(Listener):
             """
             This is the action of the listener
             """
-            broker.add(str({"source": self.url, "message": message}))
+            broker.add({"source": self.url, "message": message})
 
         @retry(HTTPError, tries=3, delay=2, logger=logger)
         def _get(url: str) -> Dict[str, Any]:

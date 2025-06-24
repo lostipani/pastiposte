@@ -1,6 +1,8 @@
 import abc
+import json
 from queue import Queue
 from typing import Any, List
+
 import pika
 
 Value = Any
@@ -106,7 +108,7 @@ class BrokerRabbitMQ(Broker):
         self.channel.basic_publish(
             exchange=self.params.get("exchange"),
             routing_key=self.params.get("routing_key"),
-            body=value,
+            body=json.dumps(value),
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
             ),
@@ -116,15 +118,16 @@ class BrokerRabbitMQ(Broker):
         for routing_key in (
             rkey.strip() for rkey in self.params["routing_key"].split(",")
         ):
-            queue_name = f"{routing_key}_queue"
-            self.channel.queue_declare(queue=queue_name, exclusive=True)
+            self.channel.queue_declare(
+                queue=self.params.get("queue_name", ""), exclusive=True
+            )
             self.channel.queue_bind(
                 exchange=self.params.get("exchange"),
-                queue=queue_name,
+                queue=self.params.get("queue_name", ""),
                 routing_key=routing_key,
             )
             self.channel.basic_consume(
-                queue=queue_name,
+                queue=self.params.get("queue_name", ""),
                 on_message_callback=kwargs.get("callback"),
                 auto_ack=True,
             )

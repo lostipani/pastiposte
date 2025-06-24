@@ -9,7 +9,7 @@ class MissingParametersException(Exception):
 
 def get_URL() -> str:
     try:
-        return str(os.environ.get("URL", None))
+        return str(os.environ["URL"])
     except KeyError:
         logging.error("missing URL")
         raise MissingParametersException
@@ -20,6 +20,14 @@ def get_sleep() -> float:
         return float(os.environ["SLEEP"])
     except KeyError:
         logging.error("missing SLEEP, in seconds")
+        raise MissingParametersException
+
+
+def get_spark_master_URL() -> str:
+    try:
+        return str(os.environ["SPARK_MASTER"])
+    except KeyError:
+        logging.error("missing Spark master URL")
         raise MissingParametersException
 
 
