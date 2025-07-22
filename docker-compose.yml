@@ -62,7 +62,7 @@ services:
         condition: service_healthy
 
   rabbitmq:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world', 'simulation', 'solana' ]
     image: rabbitmq:4
     networks:
       - local-network
@@ -72,7 +72,7 @@ services:
       test: rabbitmq-diagnostics -q ping
       interval: 30s
       timeout: 30s
-      start_period: 10s
+      start_period: 20s
       retries: 3
 
   listener-ws-1:
@@ -113,15 +113,14 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  listener-ws-3:
-    profiles: [ 'real-world' ]
+  listener-ws-sol:
+    profiles: [ 'solana' ]
     build:
       context: ./
       dockerfile: listener/Dockerfile
     networks:
       - local-network
     environment:
-#      URL: "wss://stream.binance.com:9443/stream?streams=adausdt@kline_1m/solusdt@kline_1m"
       URL: "wss://stream.binance.com:9443/stream?streams=solusdt@kline_1m"
       SLEEP: 0
       BROKER_HOST: "rabbitmq"
@@ -152,30 +151,29 @@ services:
       rabbitmq:
         condition: service_healthy
 
-#  consumer-general:
-#    profiles: [ 'real-world' ]
-#    build:
-#      context: ./
-#      dockerfile: consumer/Dockerfile
-#    networks:
-#      - local-network
-#    environment:
-#      SLEEP: 0
-#      BROKER_HOST: "rabbitmq"
-#      BROKER_EXCHANGE: "exchange"
-#      BROKER_EXCHANGE_TYPE: "direct"
-#      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
-#      LOG_LEVEL: "INFO"
-#    depends_on:
-#      rabbitmq:
-#        condition: service_healthy
-
-  consumer-sol:
+  consumer-general:
     profiles: [ 'real-world' ]
     build:
       context: ./
       dockerfile: consumer/Dockerfile
-    command: python -m consumer.consumer_analyst  # runs the consumer_analyst
+    networks:
+      - local-network
+    environment:
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  consumer-sol:
+    profiles: [ 'solana' ]
+    build:
+      context: ./
+      dockerfile: analyst/Dockerfile
     networks:
       - local-network
     environment:
@@ -188,7 +186,7 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      
+
 networks:
   local-network:
     driver: bridge
