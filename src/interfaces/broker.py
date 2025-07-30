@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Any, List
 import pika
@@ -6,7 +6,7 @@ import pika
 Value = Any
 
 
-class Broker(object):
+class Broker(ABC):
     """
     Abstract methods to be implemented:
         add
@@ -21,8 +21,6 @@ class Broker(object):
     Raises
         BrokerNotImplementedError
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, backend: Any):
         self.backend = backend

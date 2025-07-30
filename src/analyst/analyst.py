@@ -6,11 +6,12 @@ from typing import Any, Dict
 
 from commons.logger import logger
 from commons.configuration import get_sleep
-from commons.broker import Broker
 from commons.rabbitmq import broker
+from src.interfaces.broker import Broker
+from src.interfaces.consumer import rabbitMQConsumer
 
 
-class Analyst:
+class Analyst(rabbitMQConsumer):
     """
     Analyse time series
 
@@ -23,8 +24,9 @@ class Analyst:
         max_price_since_order
     """
 
-    def __init__(self, window: int, **kwargs):
-        self.N = window
+    def __init__(self, broker: Broker, sleep: float, window: int, **kwargs):
+        super().__init__(broker, sleep)
+        self.N: int = window
         self.closes = deque(maxlen=window)
         self.timestamps_seen = set()
         self.active_order = kwargs.get("active_order", None)
@@ -106,8 +108,7 @@ class Analyst:
             logger.info("[LIVE PRICE] Close: %.2f", close)
 
 
-def consumer(broker: Broker, analyst: Analyst, sleep: float):
-    def action(data):
+    def _action(self, data):
         def _parse_message(data) -> Dict[str, Any]:
             parsed = ast.literal_eval(data)
             return {
@@ -119,24 +120,17 @@ def consumer(broker: Broker, analyst: Analyst, sleep: float):
         try:
             parsed = _parse_message(data)
             if parsed["is_closed"]:
-                analyst.on_closed_candle(parsed["kline"])
+                self.on_closed_candle(parsed["kline"])
             else:
-                analyst.on_open_candle(parsed["close"])
+                self.on_open_candle(parsed["close"])
         except KeyError:
             logger.error("Missing data in message")
             raise
 
-    def callback_fun(channel, method, properties, body):
-        del channel, method, properties
-        action(body.decode("utf-8"))
-        time.sleep(sleep)
-
-    broker.get(callback=callback_fun)
-
 
 def main(broker: Broker) -> None:
-    analyst = Analyst(window=3)
-    consumer(broker, analyst, get_sleep())
+    analyst = Analyst(broker, get_sleep(), window=3)
+    analyst.consume()
 
 
 if __name__ == "__main__":
