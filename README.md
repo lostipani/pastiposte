@@ -18,7 +18,33 @@ docker compose --profile real-world up --build
 docker compose --profile simulation up --build
 ```
 
-## Components
+## Architecture
+
+### Repository tree
+```
+.
+├── build
+│   └── a given service
+│       ├── Dockerfile
+│       └── requirements.txt
+|
+├── deploy
+│   └── docker-compose.yml
+|
+└── src
+    ├── analyst: an example of complex consumer
+    │
+    ├── commons: definitions shared by more than one service
+    │
+    ├── interfaces: definitions of services to be made concrete
+    │
+    ├── queue_logger: an example of simple consumer
+    │
+    └── server: for simulations
+```
+
+
+## Relevant structures
 ### Listener
 ```mermaid
 classDiagram
