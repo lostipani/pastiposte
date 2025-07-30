@@ -1,5 +1,5 @@
 from src.interfaces.broker import Broker
-from commons.configuration import get_rabbitmq_params
+from src.commons.configuration import get_rabbitmq_params
 
 broker_params = get_rabbitmq_params()
 broker = Broker.factory(

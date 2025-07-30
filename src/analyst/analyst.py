@@ -1,14 +1,13 @@
-import time
 import ast
 import statistics
 from collections import deque
 from typing import Any, Dict
 
-from commons.logger import logger
-from commons.configuration import get_sleep
-from commons.rabbitmq import broker
 from src.interfaces.broker import Broker
 from src.interfaces.consumer import rabbitMQConsumer
+from src.commons.logger import logger
+from src.commons.configuration import get_sleep
+from src.commons.rabbitmq import broker
 
 
 class Analyst(rabbitMQConsumer):
@@ -106,7 +105,6 @@ class Analyst(rabbitMQConsumer):
                 self.max_price_since_order = None
         else:
             logger.info("[LIVE PRICE] Close: %.2f", close)
-
 
     def _action(self, data):
         def _parse_message(data) -> Dict[str, Any]:

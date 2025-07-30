@@ -7,8 +7,8 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, status
 from fastapi.websockets import WebSocketDisconnect
 
-from commons.configuration import get_sleep
-from commons.logger import logger
+from src.commons.configuration import get_sleep
+from src.commons.logger import logger
 
 app = FastAPI()
 

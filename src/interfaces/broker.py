@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Any, List
+
 import pika
 
 Value = Any
