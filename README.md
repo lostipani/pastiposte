@@ -1,12 +1,26 @@
 # A producer-consumer service for multi-sources data
 ```mermaid
-flowchart TD
-  listHTTP@{ shape: rect, label: "listener HTTP" } --> s1@{ shape: doc, label: "source HTTP" }
-  listWS@{ shape: rect, label: "listener WS" } --> s2@{ shape: doc, label: "source WS" }
+flowchart LR
+  subgraph Extracting
+  listHTTP@{ shape: rect, label: "Listener HTTP" } --> s1@{ shape: lean-r, label: "source HTTP" }
+  listWS@{ shape: rect, label: "Listener WS" } --> s2@{ shape: lean-r, label: "source WS" }
+  end
+
   listHTTP & listWS --> exc@{ shape: hex, label: "Exchange" }
-  exc --> q1@{ shape: subproc, label: "queue key1" } --> analyst
-  exc --> q2@{ shape: subproc, label: "queue key2" } --> analyst
+  exc --> q1@{ shape: das, label: "queue key1" }
+  exc --> q2@{ shape: das, label: "queue key2" }
+
+  subgraph Consuming
+  q1 & q2 --> Consumer
+  end
+
+  Consumer --> db@{ shape: cyl, label: "DB"}
+
+  subgraph Storing
+  db
+  end
 ```
+
 
 ## How to run
 * Real-world sources:
@@ -18,9 +32,13 @@ docker compose --profile real-world up --build
 docker compose --profile simulation up --build
 ```
 
-## Architecture
+## How to develop
+1. Implement a `broker` from the provided interface.
+2. Implement a `consumer` from the provided interface and define its docker
+   image configuration.
+3. Define the deployment via `docker-compose`.
 
-### Repository tree
+## Repository tree
 ```
 .
 ├── build
@@ -44,10 +62,12 @@ docker compose --profile simulation up --build
 ```
 
 
-## Relevant structures
+## Interfaces
 ### Listener
 ```mermaid
 classDiagram
+    class Listener
+    <<interface>> Listener
     Listener <|.. ListenerWS
     Listener <|.. ListenerHTTP
     Listener: +factory(url)
@@ -82,5 +102,16 @@ classDiagram
         +add(message)
         +get()
         +is_empty()
+    }
+```
+
+### Consumer
+```mermaid
+classDiagram
+    class Consumer
+    <<interface>> Consumer
+    Consumer <|.. rabbitMQConsumer
+    class rabbitMQConsumer{
+        +consume()
     }
 ```
