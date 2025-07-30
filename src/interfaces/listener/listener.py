@@ -10,7 +10,7 @@ from websockets.sync.client import connect
 
 from commons.logger import logger
 from commons.configuration import get_URL, get_sleep
-from commons.broker import Broker
+from src.interfaces.broker import Broker
 from commons.rabbitmq import broker
 
 
