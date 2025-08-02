@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 from time import sleep
 from typing import Any
 
-from src.interfaces.broker import Broker
+from interfaces.broker import Broker
+
 
 class Consumer(ABC):
     """
@@ -24,23 +25,25 @@ class Consumer(ABC):
         This is the consuming routine
         """
         pass
-    
+
+
 class rabbitMQConsumer(Consumer):
     """
     Interface class for a RabbitMQ dependant consumer
     """
-    
+
     @abstractmethod
     def _action(self, data: Any) -> Any:
         """
         This is the consuming action once the message is fetched from the queue
         """
         pass
-    
+
     def consume(self):
         """
         This is a blocking routine fetching the queue
         """
+
         def callback_fun(channel, method, properties, body):
             """
             RabbitMQ dependent callback

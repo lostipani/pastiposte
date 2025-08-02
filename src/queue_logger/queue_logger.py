@@ -1,10 +1,10 @@
 from typing import Any
 
-from src.interfaces.broker import Broker
-from src.interfaces.consumer import rabbitMQConsumer
-from src.commons.logger import logger
-from src.commons.configuration import get_sleep
-from src.commons.rabbitmq import broker
+from interfaces.broker import Broker
+from interfaces.consumer import rabbitMQConsumer
+from commons.logger import logger
+from commons.configuration import get_sleep
+from commons.rabbitmq import broker
 
 
 class queueLogger(rabbitMQConsumer):

@@ -8,10 +8,10 @@ from requests import HTTPError
 from retry import retry
 from websockets.sync.client import connect
 
-from src.interfaces.broker import Broker
-from src.commons.logger import logger
-from src.commons.configuration import get_URL, get_sleep
-from src.commons.rabbitmq import broker
+from commons.logger import logger
+from commons.configuration import get_URL, get_sleep
+from interfaces.broker import Broker
+from commons.rabbitmq import broker
 
 
 class Listener:
