@@ -1,12 +1,13 @@
-import abc
+from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Any, List
+
 import pika
 
 Value = Any
 
 
-class Broker(object):
+class Broker(ABC):
     """
     Abstract methods to be implemented:
         add
@@ -21,8 +22,6 @@ class Broker(object):
     Raises
         BrokerNotImplementedError
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, backend: Any):
         self.backend = backend
@@ -41,15 +40,15 @@ class Broker(object):
         else:
             raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def add(self, value: Value, **kwargs):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def get(self, **kwargs) -> Value:
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def is_empty(self) -> bool:
         pass
 

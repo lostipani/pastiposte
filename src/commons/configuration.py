@@ -1,6 +1,6 @@
 import os
 from typing import Dict
-from .logger import logging
+from commons.logger import logging
 
 
 class MissingParametersException(Exception):

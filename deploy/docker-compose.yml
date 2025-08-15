@@ -3,8 +3,8 @@ services:
   server-sim:
     profiles: [ 'simulation' ]
     build:
-      context: ./
-      dockerfile: server/Dockerfile
+      context: ../
+      dockerfile: build/server/Dockerfile
     networks:
       - local-network
     ports:
@@ -23,8 +23,8 @@ services:
   listener-ws-sim:
     profiles: [ 'simulation' ]
     build:
-      context: ./
-      dockerfile: listener/Dockerfile
+      context: ../
+      dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -44,8 +44,8 @@ services:
   consumer-sim:
     profiles: [ 'simulation' ]
     build:
-      context: ./
-      dockerfile: consumer/Dockerfile
+      context: ../
+      dockerfile: build/queue_logger/Dockerfile
     networks:
       - local-network
     environment:
@@ -62,7 +62,7 @@ services:
         condition: service_healthy
 
   rabbitmq:
-    profiles: [ 'real-world', 'simulation', 'solana' ]
+    profiles: [ 'real-world', 'simulation' ]
     image: rabbitmq:4
     networks:
       - local-network
@@ -78,8 +78,8 @@ services:
   listener-ws-1:
     profiles: [ 'real-world' ]
     build:
-      context: ./
-      dockerfile: listener/Dockerfile
+      context: ../build/listener
+      dockerfile: Dockerfile
     networks:
       - local-network
     environment:
