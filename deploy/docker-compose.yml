@@ -75,27 +75,8 @@ services:
       start_period: 20s
       retries: 3
 
-  listener-ws-1:
+  listener-ws:
     profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/listener/Dockerfile
-    networks:
-      - local-network
-    environment:
-      URL: "wss://stream.binance.com:9443/ws/btcusdc@trade"
-      SLEEP: 0.1
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "trade"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  listener-ws-2:
-    profiles: [ 'real-world?' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
@@ -108,25 +89,6 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "kline_1m"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  listener-ws-sol:
-    profiles: [ 'solana' ]
-    build:
-      context: ../
-      dockerfile: build/listener/Dockerfile
-    networks:
-      - local-network
-    environment:
-      URL: "wss://stream.binance.com:9443/stream?streams=solusdt@kline_1m"
-      SLEEP: 0
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "kline_sol_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -164,24 +126,6 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  consumer-sol:
-    profiles: [ 'solana' ]
-    build:
-      context: ../
-      dockerfile: build/analyst/Dockerfile
-    networks:
-      - local-network
-    environment:
-      SLEEP: 0
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "kline_sol_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
