@@ -25,11 +25,11 @@ flowchart LR
 ## How to run
 * Real-world sources:
 ```
-docker compose --profile real-world up --build
+docker compose --project-directory deploy --profile real-world up --build
 ```
 * Simulate sources for offline testing:
 ```
-docker compose --profile simulation up --build
+docker compose --project-directory deploy --profile simulation up --build
 ```
 
 ## How to develop

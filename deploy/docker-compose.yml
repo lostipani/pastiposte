@@ -78,8 +78,8 @@ services:
   listener-ws-1:
     profiles: [ 'real-world' ]
     build:
-      context: ../build/listener
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -95,10 +95,10 @@ services:
         condition: service_healthy
 
   listener-ws-2:
-    profiles: [ 'real-world' ]
+    profiles: [ 'real-world?' ]
     build:
-      context: ./
-      dockerfile: listener/Dockerfile
+      context: ../
+      dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -116,8 +116,8 @@ services:
   listener-ws-sol:
     profiles: [ 'solana' ]
     build:
-      context: ./
-      dockerfile: listener/Dockerfile
+      context: ../
+      dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -135,8 +135,8 @@ services:
   listener-http:
     profiles: [ 'real-world' ]
     build:
-      context: ./
-      dockerfile: listener/Dockerfile
+      context: ../
+      dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
@@ -154,8 +154,8 @@ services:
   consumer-general:
     profiles: [ 'real-world' ]
     build:
-      context: ./
-      dockerfile: consumer/Dockerfile
+      context: ../
+      dockerfile: build/queue_logger/Dockerfile
     networks:
       - local-network
     environment:
@@ -172,8 +172,8 @@ services:
   consumer-sol:
     profiles: [ 'solana' ]
     build:
-      context: ./
-      dockerfile: analyst/Dockerfile
+      context: ../
+      dockerfile: build/analyst/Dockerfile
     networks:
       - local-network
     environment:
