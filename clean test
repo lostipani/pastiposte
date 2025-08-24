@@ -1,0 +1,23 @@
+docker compose --profile real-world build analyst
+docker compose --profile real-world up -d rabbitmq listener-ws-2
+docker compose --profile real-world up -d analyst db-writer
+docker compose --profile real-world logs -f analyst db-writer
+
+
+
+Check the DB:
+docker compose --profile real-world exec postgres \
+  psql -U pastiposte -d db_orders -c \
+'SELECT order_id,pair,side,qty,type,status,version,"timestamp"
+ FROM public.orders ORDER BY "timestamp" DESC LIMIT 15;'
+
+
+whipe the table:
+docker compose --profile real-world stop analyst db-writer
+docker compose --profile real-world exec postgres \
+  psql -U pastiposte -d db_orders -c \
+"TRUNCATE TABLE public.orders RESTART IDENTITY;"
+
+Delete the DB:
+docker compose --profile real-world down -v
+docker compose --profile real-world up -d rabbitmq postgres listener-ws-2 analy
