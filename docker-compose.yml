@@ -196,7 +196,7 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data			# ? do sta?
       - ./initdb:/docker-entrypoint-initdb.d:ro  # auto roles on first init
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -206,23 +206,23 @@ services:
     restart: unless-stopped
     networks: [ local-network ]
     
-  # Runs schema.sql on every startup (idempotent)
-  schema-migrator:
-    image: postgres:16
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ./schema:/schema:ro
-    entrypoint: ["bash","-lc"]
-    command:
-      - >
-        psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB}
-        -v ON_ERROR_STOP=1 -f /schema/schema.sql
-    restart: "no"
-    networks: [ local-network ]
+  ## Runs schema.sql on every startup (idempotent)
+  #schema-migrator:
+  #  image: postgres:16
+  #  depends_on:
+  #    postgres:
+  #      condition: service_healthy
+  #  environment:
+  #    PGPASSWORD: ${POSTGRES_PASSWORD}
+  #  volumes:
+  #    - ./schema:/schema:ro
+  #  entrypoint: ["bash","-lc"]
+  #  command:
+  #    - >
+  #      psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+  #      -v ON_ERROR_STOP=1 -f /schema/schema.sql
+  #  restart: "no"
+  #  networks: [ local-network ]
         
   db-writer:
     profiles: ['real-world', 'simulation']
@@ -233,8 +233,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      schema-migrator:
-        condition: service_completed_successfully
+      #schema-migrator:
+      #  condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://app_writer:writer_password_change_me@postgres:5432/db_orders
       AMQP_URL: amqp://guest:guest@rabbitmq:5672/
