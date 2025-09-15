@@ -19,5 +19,5 @@ CREATE INDEX IF NOT EXISTS idx_orders_strategy  ON orders (strategy_id);
 
 -- Ensure privileges (safe to re-run)
 GRANT SELECT ON TABLE orders TO app_reader;
-GRANT INSERT, UPDATE, DELETE ON TABLE orders TO app_writer;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE orders TO app_writer;
 

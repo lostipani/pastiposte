@@ -33,7 +33,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "simulation"
+      BROKER_ROUTING_KEY_OUT: "simulation"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -53,7 +53,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "simulation"
+      BROKER_ROUTING_KEY_IN: "simulation"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -88,14 +88,14 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "kline_1m"
+      BROKER_ROUTING_KEY_OUT: "kline_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
   listener-http:
-    profiles: [ 'real-world' ]
+    profiles: [ 'OFFreal-world' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
@@ -107,43 +107,23 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "frankfurter"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  consumer-general:
-    profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/queue_logger/Dockerfile
-    networks:
-      - local-network
-    environment:
-      SLEEP: 0
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
+      BROKER_ROUTING_KEY_OUT: "frankfurter"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
   postgres:
+    profiles: [ 'real-world', 'pgonly' ]
     image: postgres:16
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file: ./initdb/.env
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data # ? do sta?
       - ./initdb:/docker-entrypoint-initdb.d:ro # auto roles on first init
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d db_orders" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -153,36 +133,39 @@ services:
   analyst:
     profiles: [ 'real-world', 'simulation' ]
     build:
-      context: ./
-      dockerfile: analyst/Dockerfile
+      context: ../
+      dockerfile: build/analyst/Dockerfile
     networks: [ local-network ]
     environment:
       BROKER_HOST: rabbitmq # this matches the mq service name
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY: kline_1m
-      EXCHANGE_NAME: postal-service
-      ROUTING_KEY: orders.new
+      BROKER_ROUTING_KEY_IN: kline_1m
+      BROKER_ROUTING_KEY_OUT: db_write
+      SLEEP: 60
+      LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
-    command: [ "python", "-m", "analyst.order_on_minute" ]
 
   db-writer:
     profiles: [ 'real-world', 'simulation' ]
     build:
-      context: ./db-writer
+      context: ../
+      dockerfile: build/db_writer/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://app_writer:writer_password_change_me@postgres:5432/db_orders
-      AMQP_URL: amqp://guest:guest@rabbitmq:5672/
-      EXCHANGE_NAME: postal-service
-      QUEUE_NAME: postal-service.db
-      ROUTING_KEY: orders.new
+      DATABASE_URL: postgresql://app_writer:app_writer@postgres:5432/db_orders
+      SLEEP: 0
+      LOG_LEVEL: "INFO"
+      BROKER_HOST: rabbitmq
+      BROKER_EXCHANGE: exchange
+      BROKER_EXCHANGE_TYPE: direct
+      BROKER_ROUTING_KEY_IN: db_write
     networks: [ local-network ]
     restart: unless-stopped
 

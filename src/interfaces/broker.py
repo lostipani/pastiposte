@@ -104,7 +104,7 @@ class BrokerRabbitMQ(Broker):
     def add(self, value: Value):
         self.channel.basic_publish(
             exchange=self.params.get("exchange"),
-            routing_key=self.params.get("routing_key"),
+            routing_key=self.params.get("routing_key_out"),
             body=value,
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
@@ -113,7 +113,7 @@ class BrokerRabbitMQ(Broker):
 
     def get(self, **kwargs) -> Value:
         for routing_key in (
-            rkey.strip() for rkey in self.params["routing_key"].split(",")
+            rkey.strip() for rkey in self.params["routing_key_in"].split(",")
         ):
             queue_name = f"{routing_key}_queue"
             self.channel.queue_declare(queue=queue_name, exclusive=True)
