@@ -1,5 +1,6 @@
 import json, ast
 from datetime import datetime
+import uuid
 
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
@@ -48,8 +49,8 @@ class Analyst(rabbitMQConsumer):
                 order.__dict__,
                 default=lambda obj: (
                     obj.__dict__
-                    if not isinstance(obj, datetime)
-                    else obj.isoformat()
+                    if not isinstance(obj, uuid.UUID)
+                    else str(obj)
                 ),
             ).encode("utf-8")
         )
