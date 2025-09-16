@@ -176,6 +176,7 @@ services:
       dockerfile: build/transmitter/Dockerfile
     networks:
       - local-network
+    env_file: ../.env
     environment:
       URL: "https://api.binance.com"
       SLEEP: 0

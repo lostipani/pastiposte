@@ -60,7 +60,7 @@ class TransmitterBinanceHTTP:
             """
             del channel, method, properties
             order_to_binance = OrderToBinance(json.loads(body)).mapped
-            # self.client.new_order(**order_to_binance)
+            self.client.new_order(**order_to_binance)
             logger.info(order_to_binance)
             time.sleep(sleep)
 
