@@ -27,7 +27,7 @@ class Order:
         "TAKE_PROFIT_LIMIT",
         "LIMIT_MAKER",
     ]
-    id_pasticoni: uuid.UUID
+    id_pasticoni: uuid.UUID | None = None
     timestamp: str | None = None
     newOrderRespType: Literal["ACK", "RESULT", "FULL"] = "FULL"
     timeInForce: Literal["GTC", "IOC", "FOK"] = "GTC"

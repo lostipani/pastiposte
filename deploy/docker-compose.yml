@@ -170,7 +170,7 @@ services:
     restart: unless-stopped
 
   transmitter-binance-http:
-    profiles: [ 'real-world' ]
+    profiles: [ 'OFFreal-world' ]
     build:
       context: ../
       dockerfile: build/transmitter/Dockerfile
