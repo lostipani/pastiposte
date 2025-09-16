@@ -115,15 +115,15 @@ class BrokerRabbitMQ(Broker):
         for routing_key in (
             rkey.strip() for rkey in self.params["routing_key_in"].split(",")
         ):
-            queue_name = f"{routing_key}_queue"
-            self.channel.queue_declare(queue=queue_name, exclusive=True)
+            # assign random name to this queue to stave off name conflicts
+            result = self.channel.queue_declare(queue="", exclusive=True)
             self.channel.queue_bind(
                 exchange=self.params.get("exchange"),
-                queue=queue_name,
+                queue=result.method.queue,
                 routing_key=routing_key,
             )
             self.channel.basic_consume(
-                queue=queue_name,
+                queue=result.method.queue,
                 on_message_callback=kwargs.get("callback"),
                 auto_ack=True,
             )

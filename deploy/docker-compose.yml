@@ -141,8 +141,8 @@ services:
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
       BROKER_ROUTING_KEY_IN: kline_1m
-      BROKER_ROUTING_KEY_OUT: db_write
-      SLEEP: 60
+      BROKER_ROUTING_KEY_OUT: outgoing_orders
+      SLEEP: 10
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -165,9 +165,28 @@ services:
       BROKER_HOST: rabbitmq
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: db_write
+      BROKER_ROUTING_KEY_IN: outgoing_orders
     networks: [ local-network ]
     restart: unless-stopped
+
+  transmitter-binance-http:
+    profiles: [ 'real-world' ]
+    build:
+      context: ../
+      dockerfile: build/transmitter/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "https://api.binance.com"
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_IN: "outgoing_orders"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 networks:
   local-network:
