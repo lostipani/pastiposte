@@ -62,21 +62,24 @@ services:
         condition: service_healthy
 
   rabbitmq:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world', 'simulation', 'rabbit-test' ]
     image: rabbitmq:4
     networks:
       - local-network
     ports:
       - "35672:5672"
     healthcheck:
-      test: rabbitmq-diagnostics -q ping
+      test: >
+        bash -lc "rabbitmqctl await_startup &&
+                  rabbitmq-diagnostics -q check_running &&
+                  rabbitmq-diagnostics -q check_port_connectivity" 
       interval: 30s
       timeout: 30s
       start_period: 20s
       retries: 3
 
   listener-ws:
-    profiles: [ 'real-world' ]
+    profiles: [ 'real-world', 'rabbit-test' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
@@ -131,7 +134,7 @@ services:
     networks: [ local-network ]
 
   analyst:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world', 'simulation','rabbit-test' ]
     build:
       context: ../
       dockerfile: build/analyst/Dockerfile
@@ -149,7 +152,7 @@ services:
         condition: service_healthy
 
   db-writer:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/db_writer/Dockerfile
@@ -170,7 +173,7 @@ services:
     restart: unless-stopped
 
   transmitter-binance-http:
-    profiles: [ 'OFFreal-world' ]
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/transmitter/Dockerfile
