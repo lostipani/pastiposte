@@ -60,8 +60,9 @@ class TransmitterBinanceHTTP:
             """
             del channel, method, properties
             order_to_binance = OrderToBinance(json.loads(body)).mapped
-            self.client.new_order(**order_to_binance)
-            logger.info(order_to_binance)
+            response = self.client.new_order(**order_to_binance)
+            # broker.add(response)
+            logger.info(response)
             time.sleep(sleep)
 
         self.broker.get(callback=callback_fun)

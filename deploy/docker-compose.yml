@@ -184,6 +184,7 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY_IN: "outgoing_orders"
+      BROKER_ROUTING_KEY_OUT: "exchange_response"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:

@@ -16,6 +16,7 @@ class DBWriter(rabbitMQConsumer):
     def _validate_envelope(self, o):
         required = [
             "timestamp",
+            "id_pasticoni",
             "pair",
             "side",
             "quantity",
@@ -33,11 +34,12 @@ class DBWriter(rabbitMQConsumer):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO orders (timestamp, pair, side, quantity, price, type, status, timeInForce, newOrderRespType)
-                VALUES (%(timestamp)s, %(pair)s, %(side)s, %(quantity)s, %(price)s, %(type)s, %(status)s, %(timeInForce)s, %(newOrderRespType)s);
+                INSERT INTO orders (timestamp, id_pasticoni,pair, side, quantity, price, type, status, timeInForce, newOrderRespType)
+                VALUES (%(timestamp)s, %(id_pasticoni)s, %(pair)s, %(side)s, %(quantity)s, %(price)s, %(type)s, %(status)s, %(timeInForce)s, %(newOrderRespType)s);
             """,
                 {
                     "timestamp": o.get("timestamp"),
+                    "id_pasticoni": o.get("id_pasticoni"),
                     "pair": o.get("pair"),
                     "side": o.get("side"),
                     "quantity": o.get("quantity"),

@@ -1,6 +1,7 @@
 -- Orders table (envelope only)
 CREATE TABLE IF NOT EXISTS orders (
   id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_pasticoni  UUID,
   id_strategy   INTEGER,
   id_exchange   INTEGER,
   timestamp     TIMESTAMPTZ NOT NULL,

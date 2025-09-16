@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import List, Literal
 from dataclasses import dataclass
+import uuid
 
 
 class OrderArgumentError(Exception):
@@ -26,6 +27,7 @@ class Order:
         "TAKE_PROFIT_LIMIT",
         "LIMIT_MAKER",
     ]
+    id_pasticoni: uuid.UUID
     timestamp: str | None = None
     newOrderRespType: Literal["ACK", "RESULT", "FULL"] = "FULL"
     timeInForce: Literal["GTC", "IOC", "FOK"] = "GTC"
@@ -101,6 +103,7 @@ class LimitOrder(Order):
         self.price = price
         self.quantity = quantity
         self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.id_pasticoni = uuid.uuid4()
 
 
 class MarketOrder(Order):
@@ -150,3 +153,4 @@ class MarketOrder(Order):
         self.icb_delta = kwargs.get("icb_delta")
         self.icb_tip = kwargs.get("icb_tip")
         self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.id_pasticoni = uuid.uuid4()
