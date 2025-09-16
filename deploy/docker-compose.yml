@@ -33,7 +33,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "simulation"
+      BROKER_ROUTING_KEY_OUT: "simulation"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -53,7 +53,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "simulation"
+      BROKER_ROUTING_KEY_IN: "simulation"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -88,14 +88,14 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "kline_1m"
+      BROKER_ROUTING_KEY_OUT: "kline_1m"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
   listener-http:
-    profiles: [ 'real-world' ]
+    profiles: [ 'OFFreal-world' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
@@ -107,25 +107,82 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "frankfurter"
+      BROKER_ROUTING_KEY_OUT: "frankfurter"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  consumer-general:
+  postgres:
+    profiles: [ 'real-world', 'pgonly' ]
+    image: postgres:16
+    env_file: ./initdb/.env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # ? do sta?
+      - ./initdb:/docker-entrypoint-initdb.d:ro # auto roles on first init
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d db_orders" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [ local-network ]
+
+  analyst:
+    profiles: [ 'real-world', 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/analyst/Dockerfile
+    networks: [ local-network ]
+    environment:
+      BROKER_HOST: rabbitmq # this matches the mq service name
+      BROKER_EXCHANGE: exchange
+      BROKER_EXCHANGE_TYPE: direct
+      BROKER_ROUTING_KEY_IN: kline_1m
+      BROKER_ROUTING_KEY_OUT: outgoing_orders
+      SLEEP: 10
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  db-writer:
+    profiles: [ 'real-world', 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/db_writer/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://app_writer:app_writer@postgres:5432/db_orders
+      SLEEP: 0
+      LOG_LEVEL: "INFO"
+      BROKER_HOST: rabbitmq
+      BROKER_EXCHANGE: exchange
+      BROKER_EXCHANGE_TYPE: direct
+      BROKER_ROUTING_KEY_IN: outgoing_orders
+    networks: [ local-network ]
+    restart: unless-stopped
+
+  transmitter-binance-http:
     profiles: [ 'real-world' ]
     build:
       context: ../
-      dockerfile: build/queue_logger/Dockerfile
+      dockerfile: build/transmitter/Dockerfile
     networks:
       - local-network
     environment:
+      URL: "https://api.binance.com"
       SLEEP: 0
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY: "trade, kline_1m, frankfurter"
+      BROKER_ROUTING_KEY_IN: "outgoing_orders"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -134,3 +191,8 @@ services:
 networks:
   local-network:
     driver: bridge
+
+volumes:
+  pgdata:
+
+

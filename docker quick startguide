@@ -1,0 +1,69 @@
+# 1) stop and clean everything:
+# Stop anything that could be attached
+docker stop $(docker ps -q) 2>/dev/null || true
+# Bring the compose project fully down and forget orphans
+docker compose -p pastiposte down -v --remove-orphans || true
+# Remove the named network if it exists (ignore errors)
+docker network rm pastiposte_local-network 2>/dev/null || true
+# Prune any dangling networks
+docker network prune -f
+
+# 2) Start clean
+#docker compose -p pastiposte --profile simulation up --build
+docker compose -p pastiposte --profile real-world up --build
+
+# 3) check which containers are running
+docker ps
+
+# 8) check into the postgres
+# log of a container while it's running
+docker compose exec postgres bash
+# launch the sql interactive console 
+psql -U $POSTGRES_USER -d $POSTGRES_DB
+# run sql directly
+\dt 
+# or run psql directly without opening a shell
+# see the tables
+docker compose exec postgres psql -U pastiposte -d db_orders -c "\dt"
+# look into the table orders
+docker compose exec postgres psql -U pastiposte -d db_orders -c "\d orders"
+# count the rows
+docker compose exec postgres psql -U pastiposte -d db_orders -c "SELECT count(*) FROM orders;"
+# display the row
+docker compose exec postgres psql -U pastiposte -d db_orders -c "SELECT * FROM orders;"
+
+
+
+
+
+
+
+
+
+
+PERSISTENT DATA A-Z check
+
+
+docker compose --profile real-world build analyst
+docker compose --profile real-world up -d rabbitmq listener-ws-2
+docker compose --profile real-world up -d analyst db-writer
+docker compose --profile real-world logs -f analyst db-writer
+
+
+
+Check the DB:
+docker compose --profile real-world exec postgres \
+  psql -U pastiposte -d db_orders -c \
+'SELECT order_id,pair,side,qty,type,status,version,"timestamp"
+ FROM public.orders ORDER BY "timestamp" DESC LIMIT 15;'
+
+
+whipe the table:
+docker compose --profile real-world stop analyst db-writer
+docker compose --profile real-world exec postgres \
+  psql -U pastiposte -d db_orders -c \
+"TRUNCATE TABLE public.orders RESTART IDENTITY;"
+
+Delete the DB:
+docker compose --profile real-world down -v
+docker compose --profile real-world up -d rabbitmq postgres listener-ws-2 analy

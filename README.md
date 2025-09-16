@@ -23,6 +23,21 @@ flowchart LR
 
 
 ## How to run
+#### Setup PostgreSQL
+Set the following PG superuser variables in `deploy/initdb/.env`
+```
+POSTGRES_PORT=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=db_orders
+```
+#### Setup Binance API connection
+Set the following variables in `.env`
+```
+BINANCE_API_KEY=
+BINANCE_API_SECRET=
+```
+
 * Real-world sources:
 ```
 docker compose --project-directory deploy --profile real-world up --build

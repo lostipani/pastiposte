@@ -1,133 +1,61 @@
-import ast
-import statistics
-from collections import deque
-from typing import Any, Dict
+import time, json, ast, uuid
 
-from interfaces.broker import Broker
 from interfaces.consumer import rabbitMQConsumer
-from commons.logger import logger
+from interfaces.broker import Broker
+
 from commons.configuration import get_sleep
 from commons.rabbitmq import broker
+from commons.logger import logger
 
 
 class Analyst(rabbitMQConsumer):
-    """
-    Analyse time series
 
-    Args
-        window
-        active_order
-        trailing_stop
-        mean
-        std
-        max_price_since_order
-    """
+    def _build_order(self, close_price, symbol):
+        return {
+            "order_id": str(uuid.uuid4()),
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "pair": symbol,
+            "side": "BUY",
+            "qty": 0.1,
+            "type": "MARKET",
+            "status": "NEW",
+            "strategy_id": "minute-tick",
+            "note": f"close={close_price}",
+            "version": 1,
+        }
 
-    def __init__(self, broker: Broker, sleep: float, window: int, **kwargs):
-        super().__init__(broker, sleep)
-        self.N: int = window
-        self.closes = deque(maxlen=window)
-        self.timestamps_seen = set()
-        self.active_order = kwargs.get("active_order", None)
-        self.trailing_stop = kwargs.get("trailing_stop", None)
-        self.mean = kwargs.get("mean", None)
-        self.std = kwargs.get("std", None)
-        self.max_price_since_order = kwargs.get("max_price_since_order", None)
-
-    def on_closed_candle(self, kline: dict):
-        # casting to int loses less than second resolution
-        # does set membership testing work as expected with float members?
-        timestamp = int(kline["t"])
-        if timestamp in self.timestamps_seen:
-            return
-        self.timestamps_seen.add(timestamp)
-
-        close = float(kline["c"])
-        open_ = float(kline["o"])
-        high = float(kline["h"])
-        low = float(kline["l"])
-
-        self.closes.append(close)
-
-        if len(self.closes) == self.N:
-            self.mean = statistics.mean(self.closes)
-            self.std = statistics.stdev(self.closes)
-
-            logger.info(
-                (
-                    "[CANDLE CLOSED] Open: %.2f, High: %.2f,"
-                    " Low: %.2f, Close: %.2f"
-                ),
-                open_,
-                high,
-                low,
-                close,
-            )
-            logger.info(
-                ("[STATS] Mean: %.2f, Std: %.2f"),
-                self.mean,
-                self.std,
-            )
-
-            if not self.active_order and close < self.mean - 2 * self.std:
-                self.active_order = True
-                self.trailing_stop = close - self.std
-                self.max_price_since_order = close
-                logger.info(
-                    "[ORDER] OPEN at %.2f, trailing stop at %.2f",
-                    close,
-                    self.trailing_stop,
-                )
-
-    def on_open_candle(self, close: float):
-        if self.active_order:
-            # aggiorna il massimo raggiunto da quando l'ordine è stato aperto
-            if close > self.max_price_since_order:
-                self.max_price_since_order = close
-
-            # aggiorna trailing stop se siamo saliti oltre una std
-            new_trailing_stop = self.max_price_since_order - self.std
-            if new_trailing_stop > self.trailing_stop:
-                self.trailing_stop = new_trailing_stop
-                logger.info(
-                    "[TRAILING STOP] Updated to %.2f", self.trailing_stop
-                )
-
-            # chiusura posizione
-            if close < self.trailing_stop:
-                logger.info(
-                    "[STOP LOSS] Price %.2f hit stop %.2f. Position closed.",
-                    close,
-                    self.trailing_stop,
-                )
-                self.active_order = False
-                self.trailing_stop = None
-                self.max_price_since_order = None
-        else:
-            logger.info("[LIVE PRICE] Close: %.2f", close)
-
-    def _action(self, data):
-        def _parse_message(data) -> Dict[str, Any]:
-            parsed = ast.literal_eval(data)
-            return {
-                "kline": parsed["message"]["data"]["k"],
-                "close": float(parsed["message"]["data"]["k"]["c"]),
-                "is_closed": parsed["message"]["data"]["k"]["x"],
-            }
-
+    def _parse_payload(self, text: str):
+        # listener sends str({'source':..., 'message': <json_or_dict>})
         try:
-            parsed = _parse_message(data)
-            if parsed["is_closed"]:
-                self.on_closed_candle(parsed["kline"])
-            else:
-                self.on_open_candle(parsed["close"])
-        except KeyError:
-            logger.error("Missing data in message")
-            raise
+            outer = json.loads(text)
+        except json.JSONDecodeError:
+            outer = ast.literal_eval(text)
+        msg = outer.get("message", outer)
+        if isinstance(msg, str):
+            try:
+                msg = json.loads(msg)
+            except json.JSONDecodeError:
+                msg = ast.literal_eval(msg)
+        kline = msg.get("k", msg)  # binance kline payload nests under "k"
+        return kline, msg
+
+    def _symbol_from(self, kline, fallback="BTCUSDT"):
+        return kline.get("s") or fallback
+
+    def _close_from(self, kline):
+        c = kline.get("c") or kline.get("close")
+        return float(c) if c is not None else None
+
+    def _action(self, message):
+        kline, _ = self._parse_payload(message)
+        symbol = self._symbol_from(kline)
+        close = self._close_from(kline)
+        order = self._build_order(close, symbol)
+        broker.add(json.dumps(order).encode("utf-8"))
 
 
 def main(broker: Broker) -> None:
-    analyst = Analyst(broker, get_sleep(), window=3)
+    analyst = Analyst(broker, get_sleep())
     analyst.consume()
 
 
