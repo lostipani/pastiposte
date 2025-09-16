@@ -1,4 +1,5 @@
 import time
+import json
 from os import getenv
 
 from binance.spot import Spot
@@ -7,6 +8,27 @@ from commons.configuration import get_URL, get_sleep
 from interfaces.broker import Broker
 from commons.rabbitmq import broker
 from commons.logger import logger
+from orders.orders import Order
+
+
+class OrderToBinance:
+    def __init__(self, order: Order):
+        self.order = order
+        self.mapped = self._map()
+
+    def _map(self):
+        result = {}
+        result["symbol"] = self.order["pair"]
+        for key in [
+            "side",
+            "type",
+            "timeInForce",
+            "newOrderRespType",
+            "quantity",
+            "price",
+        ]:
+            result[key] = self.order[key]
+        return result
 
 
 class TransmitterBinanceHTTP:
@@ -37,8 +59,9 @@ class TransmitterBinanceHTTP:
             price="28123"
             """
             del channel, method, properties
-            # self.client.new_order(**body)
-            logger.info(body)
+            order_to_binance = OrderToBinance(json.loads(body)).mapped
+            # self.client.new_order(**order_to_binance)
+            logger.info(order_to_binance)
             time.sleep(sleep)
 
         self.broker.get(callback=callback_fun)

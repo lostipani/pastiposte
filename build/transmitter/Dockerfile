@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
 COPY src/ /app/src
 WORKDIR /app/src
 
-CMD ["python", "-m", "interfaces.transmitter"]
+CMD ["python", "-m", "transmitter.transmitter"]

@@ -1,28 +1,15 @@
-import time, json, ast, uuid
+import json, ast
+from datetime import datetime
 
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
 
 from commons.configuration import get_sleep
 from commons.rabbitmq import broker
-from commons.logger import logger
+from orders import orders
 
 
 class Analyst(rabbitMQConsumer):
-
-    def _build_order(self, close_price, symbol):
-        return {
-            "order_id": str(uuid.uuid4()),
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "pair": symbol,
-            "side": "BUY",
-            "qty": 0.1,
-            "type": "MARKET",
-            "status": "NEW",
-            "strategy_id": "minute-tick",
-            "note": f"close={close_price}",
-            "version": 1,
-        }
 
     def _parse_payload(self, text: str):
         # listener sends str({'source':..., 'message': <json_or_dict>})
@@ -47,11 +34,25 @@ class Analyst(rabbitMQConsumer):
         return float(c) if c is not None else None
 
     def _action(self, message):
-        kline, _ = self._parse_payload(message)
-        symbol = self._symbol_from(kline)
-        close = self._close_from(kline)
-        order = self._build_order(close, symbol)
-        broker.add(json.dumps(order).encode("utf-8"))
+        del message
+        order = orders.LimitOrder(
+            pair="BTCUSDC",
+            side="BUY",
+            id_strategy=0,
+            id_binance=1,
+            price=50e3,
+            quantity=0.0004,
+        )
+        broker.add(
+            json.dumps(
+                order.__dict__,
+                default=lambda obj: (
+                    obj.__dict__
+                    if not isinstance(obj, datetime)
+                    else obj.isoformat()
+                ),
+            ).encode("utf-8")
+        )
 
 
 def main(broker: Broker) -> None:

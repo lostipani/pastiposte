@@ -15,39 +15,37 @@ class DBWriter(rabbitMQConsumer):
 
     def _validate_envelope(self, o):
         required = [
-            "order_id",
             "timestamp",
             "pair",
             "side",
-            "qty",
+            "quantity",
             "type",
             "status",
-            "version",
+            "timeInForce",
+            "newOrderRespType",
         ]
-        for k in required:
-            if k not in o:
-                raise ValueError(f"missing field: {k}")
+        for field in required:
+            if field not in o:
+                raise ValueError(f"missing field: {field}")
 
     def _insert_order(self, o):
         conn = self.kwargs["db_conn"]
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO orders (order_id, "timestamp", pair, side, qty, type, status, strategy_id, note, version)
-                VALUES (%(order_id)s, %(timestamp)s, %(pair)s, %(side)s, %(qty)s, %(type)s, %(status)s, %(strategy_id)s, %(note)s, %(version)s)
-                ON CONFLICT (order_id) DO NOTHING;
+                INSERT INTO orders (timestamp, pair, side, quantity, price, type, status, timeInForce, newOrderRespType)
+                VALUES (%(timestamp)s, %(pair)s, %(side)s, %(quantity)s, %(price)s, %(type)s, %(status)s, %(timeInForce)s, %(newOrderRespType)s);
             """,
                 {
-                    "order_id": o.get("order_id"),
                     "timestamp": o.get("timestamp"),
                     "pair": o.get("pair"),
                     "side": o.get("side"),
-                    "qty": o.get("qty"),
+                    "quantity": o.get("quantity"),
+                    "price": o.get("price"),
                     "type": o.get("type"),
                     "status": o.get("status"),
-                    "strategy_id": o.get("strategy_id"),
-                    "note": o.get("note"),
-                    "version": o.get("version", 1),
+                    "timeInForce": o.get("timeInForce"),
+                    "newOrderRespType": o.get("newOrderRespType"),
                 },
             )
         conn.commit()
@@ -56,7 +54,6 @@ class DBWriter(rabbitMQConsumer):
         body = json.loads(message)
         self._validate_envelope(body)
         self._insert_order(body)
-        # broker.add(json.dumps(order).encode("utf-8"))
 
 
 def wait_for_orders_table(conn, retries=30, delay=1.0):
