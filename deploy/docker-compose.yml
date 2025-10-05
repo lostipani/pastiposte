@@ -202,6 +202,9 @@ services:
       - local-network
     env_file: ../.env
     environment:
+      DATABASE_URL: "postgresql://app_writer:app_writer@postgres:5432/db_orders"
+      # BINANCE_API_KEY: "${BINANCE_API_KEY}"
+      # BINANCE_API_SECRET: "${BINANCE_API_SECRET}"
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
@@ -211,6 +214,8 @@ services:
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
 networks:

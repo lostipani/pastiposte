@@ -4,3 +4,4 @@ psycopg[binary]==3.2.1
 python-binance==1.0.19
 retry==0.9.2
 binance-connector==3.5.1
+psycopg[binary]==3.2.1

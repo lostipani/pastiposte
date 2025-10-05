@@ -1,11 +1,15 @@
-import asyncio, json, uuid, os
-import psycopg
+import asyncio, json, uuid
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
-from commons.configuration import get_sleep, get_rabbitmq_params
+from commons.configuration import get_sleep
 from commons.rabbitmq import broker
 from commons.logger import logger
 from accountant.binance_connector import BinanceConnector
+from binance.spot import Spot
+from commons.configuration import get_rabbitmq_params
+import psycopg
+
+# BLABLA still to do: startup synch DB-API
 
 
 class Accountant(rabbitMQConsumer):
@@ -19,8 +23,32 @@ class Accountant(rabbitMQConsumer):
         self.active_orders = {}  # key=id_pasticoni, value=order data
 
     def _action(self, data):
-        """Required by abstract base class (unused)."""
+        """Required by abstract base class, not used."""
         pass
+
+    async def reconcile(self):
+        logger.info("Starting reconciliation with DB")
+        db_url = getenv("DATABASE_URL")
+        open_orders_exchange = self.connector.fetch_open_orders()
+        async with psycopg.AsyncConnection.connect(db_url) as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT id_pasticoni, status FROM orders WHERE status='OPEN'"
+                )
+                open_orders_db = {row[0]: row[1] async for row in cur}
+        exchange_ids = {str(o["orderId"]) for o in open_orders_exchange}
+        for db_id in open_orders_db:
+            if db_id not in exchange_ids:
+                await self.publish_execution_update(
+                    {"orderId": db_id, "status": "CANCELLED"}
+                )
+        for order in open_orders_exchange:
+            oid = str(order["orderId"])
+            if oid not in open_orders_db:
+                await self.publish_execution_update(
+                    {"orderId": oid, "status": "NEW"}
+                )
+        logger.info("Reconciliation complete")
 
     async def publish_execution_update(self, event):
         """Publish order status updates to RabbitMQ."""
@@ -35,46 +63,6 @@ class Accountant(rabbitMQConsumer):
         self.broker.add(json.dumps(msg).encode("utf-8"))
         logger.info(f"Published execution update for {msg['id_pasticoni']}")
 
-    async def reconcile(self):
-        """Compare DB open orders and exchange open orders at startup."""
-        db_url = os.getenv("DATABASE_URL")
-        if not db_url:
-            logger.error("Missing DATABASE_URL for reconciliation")
-            return
-
-        logger.info("Starting reconciliation between DB and exchange")
-        # Fetch open orders from exchange
-        open_orders_exchange = self.connector.fetch_open_orders()
-        exchange_ids = {str(o["orderId"]) for o in open_orders_exchange}
-
-        # Fetch open orders from DB
-        try:
-            async with await psycopg.AsyncConnection.connect(db_url) as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(
-                        "SELECT id_pasticoni, status FROM orders WHERE status='OPEN'"
-                    )
-                    open_orders_db = {str(row[0]): row[1] async for row in cur}
-        except Exception as e:
-            logger.error(f"DB reconciliation failed: {e}")
-            return
-
-        # Compare and publish corrections
-        for db_id in open_orders_db:
-            if db_id not in exchange_ids:
-                await self.publish_execution_update(
-                    {"orderId": db_id, "status": "CANCELLED"}
-                )
-
-        for order in open_orders_exchange:
-            oid = str(order["orderId"])
-            if oid not in open_orders_db:
-                await self.publish_execution_update(
-                    {"orderId": oid, "status": "NEW"}
-                )
-
-        logger.info("Reconciliation complete")
-
     async def listen_exchange_ws(self):
         async def handle_event(event):
             etype = event.get("e")
@@ -85,7 +73,7 @@ class Accountant(rabbitMQConsumer):
 
     async def poll_exchange_http(self):
         while True:
-            orders = self.connector.fetch_open_orders()
+            orders = await self.connector.fetch_open_orders()
             logger.info(f"Open orders: {orders}")
             await asyncio.sleep(60)
 
@@ -99,7 +87,7 @@ class Accountant(rabbitMQConsumer):
             self.active_orders[oid] = msg
             logger.info(f"Received new order {oid} from analyst")
 
-        # Separate connection to avoid thread conflict
+        # self.broker.get(callback=callback_fun)
         params = get_rabbitmq_params()
         local_broker = Broker.factory(backend="rabbitmq", **params)
         local_broker.get(callback=callback_fun)
@@ -112,16 +100,17 @@ class Accountant(rabbitMQConsumer):
             logger.info("Published update")
 
     def consume(self):
-        """Entry point."""
-        # Run reconciliation first, then start normal tasks
-        self.loop.run_until_complete(self.reconcile())
-        self.loop.run_until_complete(self.run_all())
+        """Entry point from rabbitMQConsumer interface."""
+        self.loop.run_until_complete(self.reconcile())  # reconcile DB and API
+        self.loop.run_until_complete(self.run_all())  # start the ops
 
     async def run_all(self):
         tasks = [
             self.listen_exchange_ws(),
             self.poll_exchange_http(),
-            asyncio.to_thread(self.consume_new_orders),
+            asyncio.to_thread(
+                self.consume_new_orders
+            ),  # runs the blocking pika consumer in a thread
             self.publish_updates(),
         ]
         await asyncio.gather(*tasks)
