@@ -6,6 +6,8 @@ from commons.rabbitmq import broker
 from commons.logger import logger
 from accountant.binance_connector import BinanceConnector
 
+# BLABLA still to do: startup synch DB-API
+
 
 class Accountant(rabbitMQConsumer):
     """Main accountant service."""

@@ -200,6 +200,7 @@ services:
       dockerfile: build/accountant/Dockerfile
     networks:
       - local-network
+    env_file: ../.env
     environment:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
