@@ -48,11 +48,10 @@ class BinanceConnector:
             await self.listen_ws(callback)
 
     async def fetch_open_orders(self, symbol=None):
-        """Poll open orders via HTTP."""
-        url = f"{self.base_url}/api/v3/openOrders"
-        params = {"symbol": symbol} if symbol else {}
-        headers = {"X-MBX-APIKEY": getenv("BINANCE_API_KEY")}
-        async with self.session.get(
-            url, headers=headers, params=params
-        ) as resp:
-            return await resp.json()
+        """Poll open orders via signed REST call."""
+        client = Spot(
+            api_key=getenv("BINANCE_API_KEY"),
+            api_secret=getenv("BINANCE_API_SECRET"),
+            base_url=self.base_url,
+        )
+        return client.get_open_orders(symbol=symbol)  # signed automatically
