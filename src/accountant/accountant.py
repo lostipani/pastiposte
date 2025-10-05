@@ -12,9 +12,14 @@ class Accountant(rabbitMQConsumer):
 
     def __init__(self, broker: Broker, sleep: float):
         super().__init__(broker, sleep)
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.connector = BinanceConnector()
         self.active_orders = {}  # key=id_pasticoni, value=order data
+
+    def _action(self, data):
+        """Required by abstract base class, not used."""
+        pass
 
     async def publish_execution_update(self, event):
         """Publish order status updates to RabbitMQ."""
