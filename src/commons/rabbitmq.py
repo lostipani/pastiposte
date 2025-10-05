@@ -1,6 +1,8 @@
 from interfaces.broker import Broker
 from commons.configuration import get_rabbitmq_params
 
+# from commons.routing import EXCHANGE, EXCHANGE_TYPE  # add this import
+
 broker_params = get_rabbitmq_params()
 broker = Broker.factory(
     backend="rabbitmq",

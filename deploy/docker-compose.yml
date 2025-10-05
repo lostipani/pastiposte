@@ -134,7 +134,7 @@ services:
     networks: [ local-network ]
 
   analyst:
-    profiles: [ 'real-world', 'simulation','rabbit-test' ]
+    profiles: [ 'real-world', 'simulation', 'rabbit-test' ]
     build:
       context: ../
       dockerfile: build/analyst/Dockerfile
@@ -188,6 +188,25 @@ services:
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY_IN: "outgoing_orders"
       BROKER_ROUTING_KEY_OUT: "exchange_response"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  accountant:
+    profiles: [ 'real-world' ]
+    build:
+      context: ../
+      dockerfile: build/accountant/Dockerfile
+    networks:
+      - local-network
+    environment:
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_IN: "orders.new"
+      BROKER_ROUTING_KEY_OUT: "orders.exec_updates"
+      SLEEP: 0
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:

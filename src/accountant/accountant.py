@@ -1,45 +1,86 @@
-import time
-import json
-from os import getenv
-
-from binance.spot import Spot
-
-from commons.configuration import get_URL, get_sleep
+import asyncio, json, uuid
+from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
+from commons.configuration import get_sleep
 from commons.rabbitmq import broker
 from commons.logger import logger
-from orders.orders import Order
+from accountant.binance_connector import BinanceConnector
 
 
+class Accountant(rabbitMQConsumer):
+    """Main accountant service."""
 
-class Accountant:
-    def __init__(self, url: str, broker: Broker):
-        self.url = url
-        self.broker = broker
-        self.client = self._connect()
+    def __init__(self, broker: Broker, sleep: float):
+        super().__init__(broker, sleep)
+        self.loop = asyncio.get_event_loop()
+        self.connector = BinanceConnector()
+        self.active_orders = {}  # key=id_pasticoni, value=order data
 
-    def _connect(self):
-        return Spot(
-            api_key=getenv("BINANCE_API_KEY"),
-            api_secret=getenv("BINANCE_API_SECRET"),
-            base_url=self.url,
-        )
+    async def publish_execution_update(self, event):
+        """Publish order status updates to RabbitMQ."""
+        msg = {
+            "id_pasticoni": event.get("c") or event.get("orderId"),
+            "status": event.get("X") or event.get("status"),
+            "symbol": event.get("s"),
+            "price": event.get("p"),
+            "quantity": event.get("q"),
+            "eventTime": event.get("E"),
+        }
+        self.broker.add(json.dumps(msg).encode("utf-8"))
+        logger.info(f"Published execution update for {msg['id_pasticoni']}")
 
-    def updateDB(self, sleep: float):
+    async def listen_exchange_ws(self):
+        async def handle_event(event):
+            etype = event.get("e")
+            if etype in ("executionReport", "ORDER_TRADE_UPDATE"):
+                await self.publish_execution_update(event)
 
-        def callback_fun(channel, method, properties, body):
-			order_list = ...
-			request_book = ...self.client....(order_list)
-			response = write_changes(request_book)
-            logger.info(response)
-            time.sleep(sleep)
+        await self.connector.listen_ws(handle_event)
+
+    async def poll_exchange_http(self):
+        while True:
+            orders = await self.connector.fetch_open_orders()
+            logger.info(f"Open orders: {orders}")
+            await asyncio.sleep(60)
+
+    def consume_new_orders(self):
+        """Listen for new analyst orders."""
+        from pika.adapters.blocking_connection import BlockingChannel
+
+        def callback_fun(channel: BlockingChannel, method, properties, body):
+            msg = json.loads(body.decode("utf-8"))
+            oid = msg.get("id_pasticoni")
+            self.active_orders[oid] = msg
+            logger.info(f"Received new order {oid} from analyst")
 
         self.broker.get(callback=callback_fun)
 
+    async def publish_updates(self):
+        while True:
+            await asyncio.sleep(5)
+            msg = {"id": str(uuid.uuid4()), "event": "heartbeat"}
+            self.broker.add(json.dumps(msg).encode("utf-8"))
+            logger.info("Published update")
 
-def main(broker: Broker):
-    transmitter = Accountant(get_URL(), broker)
-    transmitter.updateDB(get_sleep())
+    def consume(self):
+        """Entry point from rabbitMQConsumer interface."""
+        self.loop.run_until_complete(self.run_all())
+
+    async def run_all(self):
+        tasks = [
+            self.listen_exchange_ws(),
+            self.poll_exchange_http(),
+            asyncio.to_thread(
+                self.consume_new_orders
+            ),  # runs the blocking pika consumer in a thread
+            self.publish_updates(),
+        ]
+        await asyncio.gather(*tasks)
+
+
+def main(broker: Broker) -> None:
+    acc = Accountant(broker, get_sleep())
+    acc.consume()
 
 
 if __name__ == "__main__":
