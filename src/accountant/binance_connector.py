@@ -1,6 +1,7 @@
 import asyncio, time, aiohttp, json
 from os import getenv
 from commons.logger import logger
+from binance.spot import Spot
 
 
 class BinanceConnector:
