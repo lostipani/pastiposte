@@ -5,6 +5,8 @@ from commons.configuration import get_sleep
 from commons.rabbitmq import broker
 from commons.logger import logger
 from accountant.binance_connector import BinanceConnector
+from binance.spot import Spot
+from commons.configuration import get_rabbitmq_params
 
 # BLABLA still to do: startup synch DB-API
 
@@ -60,7 +62,10 @@ class Accountant(rabbitMQConsumer):
             self.active_orders[oid] = msg
             logger.info(f"Received new order {oid} from analyst")
 
-        self.broker.get(callback=callback_fun)
+        # self.broker.get(callback=callback_fun)
+        params = get_rabbitmq_params()
+        local_broker = Broker.factory(backend="rabbitmq", **params)
+        local_broker.get(callback=callback_fun)
 
     async def publish_updates(self):
         while True:
