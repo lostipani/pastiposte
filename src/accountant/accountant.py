@@ -32,8 +32,21 @@ class Accountant(rabbitMQConsumer):
             "quantity": event.get("q"),
             "eventTime": event.get("E"),
         }
+        # Publish generic update for DB writer
         self.broker.add(json.dumps(msg).encode("utf-8"))
         logger.info(f"Published execution update for {msg['id_pasticoni']}")
+
+        # Also send to analysts or others who are tracking this order
+        order = self.active_orders.get(msg["id_pasticoni"])
+        if order and order.get("tracked_by"):
+            for analyst_id in order["tracked_by"]:
+                routing_key = f"orders.exec_updates.{analyst_id}"
+                self.broker.channel.basic_publish(
+                    exchange=self.broker.params.get("exchange"),
+                    routing_key=routing_key,
+                    body=json.dumps(msg).encode("utf-8"),
+                )
+                logger.info(f"Sent update to analyst {analyst_id}")
 
     async def reconcile(self):
         """Compare DB open orders and exchange open orders at startup."""
