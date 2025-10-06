@@ -8,8 +8,8 @@ client = Client(os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_API_SECRET"))
 
 # example: cancel specific orders by ID and symbol
 to_cancel = [
-    {"symbol": "BTCUSDT", "orderId": 12345678},
-    {"symbol": "ETHUSDT", "orderId": 23456789},
+    {"symbol": "BTCUSDC", "orderId": 6545682181},
+    {"symbol": "BTCUSDC", "orderId": 6545689380},
 ]
 
 for o in to_cancel:
