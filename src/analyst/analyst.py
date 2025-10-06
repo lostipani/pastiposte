@@ -43,6 +43,7 @@ class Analyst(rabbitMQConsumer):
             id_binance=1,
             price=50e3,
             quantity=0.0004,
+            tracked_by=[analyst_1],
         )
         broker.add(
             json.dumps(

@@ -36,6 +36,7 @@ class Order:
     ] = "OPEN"
     comments: str | None = None
     id_competitors: List[int] | None = None
+    tracked_by: list[str] | None = None
 
     def _xor_args_parser(self, *args, **kwargs):
         """

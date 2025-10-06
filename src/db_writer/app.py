@@ -48,6 +48,7 @@ class DBWriter(rabbitMQConsumer):
                     "status": o.get("status"),
                     "timeInForce": o.get("timeInForce"),
                     "newOrderRespType": o.get("newOrderRespType"),
+                    "tracked_by": o.get("tracked_by"),
                 },
             )
         conn.commit()

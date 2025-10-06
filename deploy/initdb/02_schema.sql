@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS orders (
   price         NUMERIC,
   trigger       NUMERIC,
   id_competitors NUMERIC,
-  newOrderRespType TEXT NOT NULL
+  newOrderRespType TEXT NOT NULL,
+  tracked_by text[]
 );
 
 -- Orders table (envelope only)
