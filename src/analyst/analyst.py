@@ -80,20 +80,20 @@ class Analyst(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
-    # Listen to per-analyst updates
+    # Start main analyst logic first
+    analyst = Analyst(broker, get_sleep())
+
+    # Start accountant listener threads AFTER analyst is running
     update_thread = threading.Thread(
         target=consume_accountant_updates, daemon=True
     )
     update_thread.start()
 
-    # Listen to global accountant updates (like cancellations)
     global_thread = threading.Thread(
         target=consume_exchange_response_updates, daemon=True
     )
     global_thread.start()
 
-    # Main analyst logic
-    analyst = Analyst(broker, get_sleep())
     analyst.consume()
 
 
