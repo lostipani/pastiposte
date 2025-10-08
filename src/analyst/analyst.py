@@ -15,21 +15,21 @@ from commons.configuration import get_rabbitmq_params
 from interfaces.broker import Broker
 
 
-def consume_accountant_updates():
-    """Listen to order execution updates coming from the accountant."""
+def consume_exchange_response_updates():
+    """Listen to global accountant updates (exchange_response)."""
     params = get_rabbitmq_params()
-    # params["routing_key_in"] = "orders.exec_updates.analyst_1"
-    params["routing_key_in"] = f"orders.exec_updates.{os.getenv('ANALYST_ID')}"
-    update_broker = Broker.factory(backend="rabbitmq", **params)
+    params["routing_key_in"] = os.getenv(
+        "BROKER_ROUTING_KEY_ACCOUNTANT", "exchange_response"
+    )
+    response_broker = Broker.factory(backend="rabbitmq", **params)
 
     def callback_fun(channel, method, properties, body):
         update = json.loads(body)
         logger.info(
-            f"############ Received execution update: {update} ##############"
+            f"########## Received global accountant update: {update} ##########"
         )
-        # Here you can notify your strategy code or update local state
 
-    update_broker.get(callback=callback_fun)
+    response_broker.get(callback=callback_fun)
 
 
 class Analyst(rabbitMQConsumer):
@@ -80,13 +80,19 @@ class Analyst(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
-    # Start accountant update listener in a separate thread
+    # Listen to per-analyst updates
     update_thread = threading.Thread(
         target=consume_accountant_updates, daemon=True
     )
     update_thread.start()
 
-    # Main analyst logic (market data listener)
+    # Listen to global accountant updates (like cancellations)
+    global_thread = threading.Thread(
+        target=consume_exchange_response_updates, daemon=True
+    )
+    global_thread.start()
+
+    # Main analyst logic
     analyst = Analyst(broker, get_sleep())
     analyst.consume()
 
