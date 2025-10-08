@@ -121,7 +121,7 @@ services:
     image: postgres:16
     env_file: ./initdb/.env
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data # ? do sta?
       - ./initdb:/docker-entrypoint-initdb.d:ro # auto roles on first init
