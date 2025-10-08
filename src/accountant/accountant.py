@@ -57,7 +57,7 @@ class Accountant(rabbitMQConsumer):
 
         logger.info("Starting reconciliation between DB and exchange")
         # Fetch open orders from exchange
-        open_orders_exchange = self.connector.fetch_open_orders()
+        open_orders_exchange = await self.connector.fetch_open_orders()
         exchange_ids = {str(o["orderId"]) for o in open_orders_exchange}
 
         # Fetch open orders from DB
@@ -98,7 +98,7 @@ class Accountant(rabbitMQConsumer):
 
     async def poll_exchange_http(self):
         while True:
-            orders = self.connector.fetch_open_orders()
+            orders = await self.connector.fetch_open_orders()
             logger.info(f"Open orders: {orders}")
             await asyncio.sleep(60)
 

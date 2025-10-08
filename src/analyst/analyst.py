@@ -1,7 +1,7 @@
 import json, ast
 from datetime import datetime
 import uuid
-
+import os
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
 
