@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e  # stop if any command fails
 
-echo "Deleting all containers"
+echo "Killing and deleting all containers"
+docker stop $(docker ps -aq)
 docker rm $(docker ps -aq)
 
 echo "Deleting all persistent volumes"
