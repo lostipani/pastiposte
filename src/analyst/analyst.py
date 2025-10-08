@@ -18,8 +18,8 @@ from interfaces.broker import Broker
 def consume_accountant_updates():
     """Listen to order execution updates coming from the accountant."""
     params = get_rabbitmq_params()
-    params["routing_key_in"] = "orders.exec_updates.analyst_1"
-    # params["routing_key_in"] = f"orders.exec_updates.{os.getenv('ANALYST_ID')}"
+    # params["routing_key_in"] = "orders.exec_updates.analyst_1"
+    params["routing_key_in"] = f"orders.exec_updates.{os.getenv('ANALYST_ID')}"
     update_broker = Broker.factory(backend="rabbitmq", **params)
 
     def callback_fun(channel, method, properties, body):
