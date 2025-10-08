@@ -132,10 +132,14 @@ class Accountant(rabbitMQConsumer):
 
     async def run_all(self):
         tasks = [
+            logger.info(f"I'm Here!1")    
             self.listen_exchange_ws(),
-            self.poll_exchange_http(),
+            logger.info(f"I'm Here!2")                
+            # self.poll_exchange_http(),
             asyncio.to_thread(self.consume_new_orders),
+            logger.info(f"I'm Here!3")                
             self.publish_updates(),
+            logger.info(f"I'm Here!4")                
         ]
         await asyncio.gather(*tasks)
 

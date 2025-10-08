@@ -25,7 +25,7 @@ def consume_accountant_updates():
     def callback_fun(channel, method, properties, body):
         update = json.loads(body)
         logger.info(
-            f"################## Received execution update: {update} ##############"
+            f"############ Received execution update: {update} ##############"
         )
         # Here you can notify your strategy code or update local state
 
