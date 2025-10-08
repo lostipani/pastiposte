@@ -101,13 +101,16 @@ class Accountant(rabbitMQConsumer):
         async def handle_event(event):
             etype = event.get("e")
             if etype in ("executionReport"):
+                # this catches all events fromt he binance API
                 logger.info("EXECUTION EVENT!!!")
-                await self.publish_execution_update(event)
+                # await self.publish_execution_update(event)
             if (
                 event.get("e") == "executionReport"
                 and event.get("X") == "CANCELED"
             ):
+                # this is only in case of cancellation
                 logger.info("order canceled → notifying analyst!!!!")
+                # then we notify the analyst
                 await self.publish_execution_update(event)
 
         await self.connector.listen_ws(handle_event)
