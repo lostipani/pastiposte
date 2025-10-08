@@ -34,6 +34,42 @@ class DBWriter(rabbitMQConsumer):
         with conn.cursor() as cur:
             cur.execute(
                 """
+                INSERT INTO orders (timestamp, id_pasticoni, pair, side, quantity, price,
+                                    type, status, timeInForce, newOrderRespType)
+                VALUES (%(timestamp)s, %(id_pasticoni)s, %(pair)s, %(side)s, %(quantity)s,
+                        %(price)s, %(type)s, %(status)s, %(timeInForce)s, %(newOrderRespType)s)
+                ON CONFLICT (id_pasticoni)
+                DO UPDATE
+                SET status = EXCLUDED.status,
+                    price = EXCLUDED.price,
+                    quantity = EXCLUDED.quantity,
+                    timestamp = EXCLUDED.timestamp;
+                """,
+                {
+                    "timestamp": o.get("timestamp"),
+                    "id_pasticoni": o.get("id_pasticoni"),
+                    "pair": o.get("pair"),
+                    "side": o.get("side"),
+                    "quantity": o.get("quantity"),
+                    "price": o.get("price"),
+                    "type": o.get("type"),
+                    "status": o.get("status"),
+                    "timeInForce": o.get("timeInForce"),
+                    "newOrderRespType": o.get("newOrderRespType"),
+                },
+            )
+        conn.commit()
+        logger.info(
+            f"Order {o.get('id_pasticoni')} written/updated with status {o.get('status')}"
+        )
+
+
+'''
+    def _insert_order(self, o):
+        conn = self.kwargs["db_conn"]
+        with conn.cursor() as cur:
+            cur.execute(
+                """
                 INSERT INTO orders (timestamp, id_pasticoni,pair, side, quantity, price, type, status, timeInForce, newOrderRespType)
                 VALUES (%(timestamp)s, %(id_pasticoni)s, %(pair)s, %(side)s, %(quantity)s, %(price)s, %(type)s, %(status)s, %(timeInForce)s, %(newOrderRespType)s);
             """,
@@ -57,6 +93,8 @@ class DBWriter(rabbitMQConsumer):
         body = json.loads(message)
         self._validate_envelope(body)
         self._insert_order(body)
+
+'''
 
 
 def wait_for_orders_table(conn, retries=30, delay=1.0):

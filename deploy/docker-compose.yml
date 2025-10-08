@@ -170,7 +170,8 @@ services:
       BROKER_HOST: rabbitmq
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: outgoing_orders
+      # BROKER_ROUTING_KEY_IN: outgoing_orders # what about this?
+      BROKER_ROUTING_KEY_IN: exchange_response # must match accountant      
     networks: [ local-network ]
     restart: unless-stopped
 
