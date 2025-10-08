@@ -19,11 +19,14 @@ def consume_accountant_updates():
     """Listen to order execution updates coming from the accountant."""
     params = get_rabbitmq_params()
     params["routing_key_in"] = "orders.exec_updates.analyst_1"
+    # params["routing_key_in"] = f"orders.exec_updates.{os.getenv('ANALYST_ID')}"
     update_broker = Broker.factory(backend="rabbitmq", **params)
 
     def callback_fun(channel, method, properties, body):
         update = json.loads(body)
-        logger.info(f"Received execution update: {update}")
+        logger.info(
+            f"################## Received execution update: {update} ##############"
+        )
         # Here you can notify your strategy code or update local state
 
     update_broker.get(callback=callback_fun)
