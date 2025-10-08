@@ -10,6 +10,25 @@ from commons.rabbitmq import broker
 from orders import orders
 
 
+import threading
+from commons.configuration import get_rabbitmq_params
+from interfaces.broker import Broker
+
+
+def consume_accountant_updates():
+    """Listen to order execution updates coming from the accountant."""
+    params = get_rabbitmq_params()
+    params["routing_key_in"] = "orders.exec_updates.analyst_1"
+    update_broker = Broker.factory(backend="rabbitmq", **params)
+
+    def callback_fun(channel, method, properties, body):
+        update = json.loads(body)
+        logger.info(f"Received execution update: {update}")
+        # Here you can notify your strategy code or update local state
+
+    update_broker.get(callback=callback_fun)
+
+
 class Analyst(rabbitMQConsumer):
 
     def _parse_payload(self, text: str):
@@ -58,6 +77,13 @@ class Analyst(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
+    # Start accountant update listener in a separate thread
+    update_thread = threading.Thread(
+        target=consume_accountant_updates, daemon=True
+    )
+    update_thread.start()
+
+    # Main analyst logic (market data listener)
     analyst = Analyst(broker, get_sleep())
     analyst.consume()
 

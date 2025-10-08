@@ -145,6 +145,7 @@ services:
       BROKER_EXCHANGE_TYPE: direct
       BROKER_ROUTING_KEY_IN: kline_1m
       BROKER_ROUTING_KEY_OUT: outgoing_orders
+      ANALYST_ID: analyst_1
       SLEEP: 10
       LOG_LEVEL: "INFO"
     depends_on:
