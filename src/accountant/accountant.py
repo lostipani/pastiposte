@@ -88,6 +88,15 @@ class Accountant(rabbitMQConsumer):
 
         logger.info("Reconciliation complete")
 
+    async def periodic_reconcile(self):
+        """Repeat reconcile() every 60 seconds."""
+        while True:
+            try:
+                await self.reconcile()
+            except Exception as e:
+                logger.error(f"Periodic reconcile failed: {e}")
+            await asyncio.sleep(60)
+
     async def listen_exchange_ws(self):
         async def handle_event(event):
             etype = event.get("e")
@@ -136,6 +145,7 @@ class Accountant(rabbitMQConsumer):
             self.poll_exchange_http(),
             asyncio.to_thread(self.consume_new_orders),
             self.publish_updates(),
+            self.periodic_reconcile(),  # <-- add this line
         ]
         await asyncio.gather(*tasks)
 
