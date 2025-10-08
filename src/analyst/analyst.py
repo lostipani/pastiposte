@@ -15,6 +15,23 @@ from commons.configuration import get_rabbitmq_params
 from interfaces.broker import Broker
 
 
+def consume_accountant_updates():
+    """Listen to order execution updates coming from the accountant."""
+    params = get_rabbitmq_params()
+    # params["routing_key_in"] = "orders.exec_updates.analyst_1"
+    params["routing_key_in"] = f"orders.exec_updates.{os.getenv('ANALYST_ID')}"
+    update_broker = Broker.factory(backend="rabbitmq", **params)
+
+    def callback_fun(channel, method, properties, body):
+        update = json.loads(body)
+        logger.info(
+            f"################## Received execution update: {update} ##############"
+        )
+        # Here you can notify your strategy code or update local state
+
+    update_broker.get(callback=callback_fun)
+
+
 class Analyst(rabbitMQConsumer):
 
     def _parse_payload(self, text: str):
@@ -47,7 +64,7 @@ class Analyst(rabbitMQConsumer):
             id_strategy=0,
             id_binance=1,
             price=50e3,
-            quantity=0.0001,
+            quantity=0.0004,
             tracked_by=[os.getenv("ANALYST_ID", "analyst_1")],
         )
         broker.add(
