@@ -1,103 +1,118 @@
+import json, ast
+from datetime import datetime
+import uuid
 import os
-import json
-import asyncio
+from interfaces.consumer import rabbitMQConsumer
+from interfaces.broker import Broker
+
+from commons.configuration import get_sleep
+from commons.rabbitmq import broker
+from orders import orders
+
+
 import threading
-import pika
+from commons.configuration import get_rabbitmq_params
+from interfaces.broker import Broker
+
+
 import aio_pika
-from commons.models import LimitOrder, Side
+import asyncio
 from commons.logger import logger
 
-# Broker parameters
-BROKER_HOST = os.getenv("BROKER_HOST", "rabbitmq")
-BROKER_EXCHANGE = os.getenv("BROKER_EXCHANGE", "exchange")
-BROKER_ROUTING_KEY_IN = os.getenv("BROKER_ROUTING_KEY_IN", "kline_1m")
-BROKER_ROUTING_KEY_OUT = os.getenv("BROKER_ROUTING_KEY_OUT", "outgoing_orders")
-BROKER_ROUTING_KEY_ACCOUNTANT = os.getenv(
-    "BROKER_ROUTING_KEY_ACCOUNTANT", "exchange_response"
-)
 
-
-async def consume_market_data():
-    """Listen to market data and emit orders."""
-    connection = await aio_pika.connect_robust(BROKER_HOST)
+async def consume_accountant_updates():
+    """Listen for updates (like cancellations) from accountant."""
+    connection = await aio_pika.connect_robust(
+        os.getenv("BROKER_HOST", "rabbitmq")
+    )
     channel = await connection.channel()
     exchange = await channel.declare_exchange(
-        BROKER_EXCHANGE, aio_pika.ExchangeType.DIRECT
+        os.getenv("BROKER_EXCHANGE", "exchange"), aio_pika.ExchangeType.DIRECT
     )
 
     queue = await channel.declare_queue("", exclusive=True)
-    await queue.bind(exchange, BROKER_ROUTING_KEY_IN)
-
-    logger.info("Analyst ready. Listening for market data...")
+    await queue.bind(
+        exchange,
+        os.getenv("BROKER_ROUTING_KEY_ACCOUNTANT", "exchange_response"),
+    )
 
     async with queue.iterator() as queue_iter:
         async for message in queue_iter:
             async with message.process():
-                try:
-                    data = json.loads(message.body)
-                    logger.info(f"Received kline: {data}")
-                except Exception:
-                    logger.warning("Invalid kline message.")
-                    continue
-
-                # Emit a simple fixed limit order
-                order = LimitOrder(
-                    symbol="BTCUSDC", side=Side.BUY, price=50000, volume=0.0001
-                )
-                body = json.dumps(order.dict()).encode()
-
-                await exchange.publish(
-                    aio_pika.Message(
-                        body=body,
-                        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                    ),
-                    routing_key=BROKER_ROUTING_KEY_OUT,
-                )
-                logger.info(f"Order sent: {order.dict()}")
+                data = json.loads(message.body)
+                if data.get("status") == "CANCELED":
+                    logger.info(
+                        f"Got the cancellation for order {data.get('id_pasticoni')}"
+                    )
 
 
-def consume_accountant_updates():
-    """Listen for accountant updates like cancellations."""
-    params = pika.ConnectionParameters(host=BROKER_HOST)
-    conn = pika.BlockingConnection(params)
-    ch = conn.channel()
+class Analyst(rabbitMQConsumer):
 
-    ch.exchange_declare(
-        exchange=BROKER_EXCHANGE, exchange_type="direct", durable=False
-    )
-    q = ch.queue_declare(queue="", exclusive=True).method.queue
-    ch.queue_bind(
-        exchange=BROKER_EXCHANGE,
-        queue=q,
-        routing_key=BROKER_ROUTING_KEY_ACCOUNTANT,
-    )
-
-    def on_msg(ch_, method, props, body):
+    def _parse_payload(self, text: str):
+        # listener sends str({'source':..., 'message': <json_or_dict>})
         try:
-            data = json.loads(body.decode("utf-8"))
-            status = (data.get("status") or "").upper()
-            if status in ("CANCELED", "CANCELLED"):
-                logger.info(
-                    f"Got the cancellation for order {data.get('id_pasticoni')}"
-                )
-        except Exception as e:
-            logger.error(f"Accountant update parse error: {e}")
-        finally:
-            ch_.basic_ack(delivery_tag=method.delivery_tag)
+            outer = json.loads(text)
+        except json.JSONDecodeError:
+            outer = ast.literal_eval(text)
+        msg = outer.get("message", outer)
+        if isinstance(msg, str):
+            try:
+                msg = json.loads(msg)
+            except json.JSONDecodeError:
+                msg = ast.literal_eval(msg)
+        kline = msg.get("k", msg)  # binance kline payload nests under "k"
+        return kline, msg
 
-    ch.basic_consume(queue=q, on_message_callback=on_msg, auto_ack=False)
-    logger.info("Listening for accountant updates...")
-    ch.start_consuming()
+    def _symbol_from(self, kline, fallback="BTCUSDT"):
+        return kline.get("s") or fallback
+
+    def _close_from(self, kline):
+        c = kline.get("c") or kline.get("close")
+        return float(c) if c is not None else None
+
+    def _action(self, message):
+        del message
+        order = orders.LimitOrder(
+            pair="BTCUSDC",
+            side="BUY",
+            id_strategy=0,
+            id_binance=1,
+            price=50e3,
+            quantity=0.0001,
+            tracked_by=[os.getenv("ANALYST_ID", "analyst_1")],
+        )
+        broker.add(
+            json.dumps(
+                order.__dict__,
+                default=lambda obj: (
+                    obj.__dict__
+                    if not isinstance(obj, uuid.UUID)
+                    else str(obj)
+                ),
+            ).encode("utf-8")
+        )
 
 
-def main():
-    # Start accountant listener thread
-    t = threading.Thread(target=consume_accountant_updates, daemon=True)
-    t.start()
+"""
+async def main():
+    await asyncio.gather(
+        consume_market_data(),  # existing market-data loop
+        consume_accountant_updates(),  # new cancellation listener
+    )
+"""
 
-    # Run the async market data consumer loop
-    asyncio.run(consume_market_data())
+"""
+def main(broker: Broker) -> None:
+    # Start accountant update listener in a separate thread
+    update_thread = threading.Thread(
+        target=consume_accountant_updates, daemon=True
+    )
+    update_thread.start()
 
+    # Main analyst logic (market data listener)
+    analyst = Analyst(broker, get_sleep())
+    analyst.consume()
+"""
 
 if __name__ == "__main__":
-    main()
+    main(broker)
