@@ -34,7 +34,7 @@ class Accountant(rabbitMQConsumer):
         }
         # Publish generic update for DB writer
         self.broker.add(json.dumps(msg).encode("utf-8"))
-        logger.info(f"Published execution update for {msg['id_pasticoni']}")
+        # logger.info(f"Published execution update for {msg['id_pasticoni']}")
 
         # Also send to analysts or others who are tracking this order
         order = self.active_orders.get(msg["id_pasticoni"])
@@ -138,10 +138,10 @@ class Accountant(rabbitMQConsumer):
 
     async def publish_updates(self):
         while True:
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
             msg = {"id": str(uuid.uuid4()), "event": "heartbeat"}
             self.broker.add(json.dumps(msg).encode("utf-8"))
-            logger.info("Published update")
+            # logger.info("Published update")
 
     def consume(self):
         """Entry point."""
