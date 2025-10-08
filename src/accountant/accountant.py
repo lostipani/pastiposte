@@ -103,8 +103,11 @@ class Accountant(rabbitMQConsumer):
             if etype in ("executionReport"):
                 logger.info("EXECUTION EVENT!!!")
                 await self.publish_execution_update(event)
-            if etype in ("ORDER_TRADE_UPDATE"):
-                logger.info("ORDER UPDATE EVENT!!!")
+            if (
+                event.get("e") == "executionReport"
+                and event.get("X") == "CANCELED"
+            ):
+                logger.info("order canceled → notifying analyst!!!!")
                 await self.publish_execution_update(event)
 
         await self.connector.listen_ws(handle_event)
