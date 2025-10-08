@@ -100,7 +100,7 @@ class Accountant(rabbitMQConsumer):
     async def listen_exchange_ws(self):
         async def handle_event(event):
             etype = event.get("e")
-            if etype in ("executionReport", "ORDER_TRADE_UPDATE"):
+            if etype in ("executionReport", "ORDER_TRADE_UPDATE!!!!!!"):
                 logger.info("something changed!")
                 await self.publish_execution_update(event)
 
