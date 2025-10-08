@@ -20,32 +20,6 @@ import asyncio
 from commons.logger import logger
 
 
-async def consume_accountant_updates():
-    """Listen for updates (like cancellations) from accountant."""
-    connection = await aio_pika.connect_robust(
-        os.getenv("BROKER_HOST", "rabbitmq")
-    )
-    channel = await connection.channel()
-    exchange = await channel.declare_exchange(
-        os.getenv("BROKER_EXCHANGE", "exchange"), aio_pika.ExchangeType.DIRECT
-    )
-
-    queue = await channel.declare_queue("", exclusive=True)
-    await queue.bind(
-        exchange,
-        os.getenv("BROKER_ROUTING_KEY_ACCOUNTANT", "exchange_response"),
-    )
-
-    async with queue.iterator() as queue_iter:
-        async for message in queue_iter:
-            async with message.process():
-                data = json.loads(message.body)
-                if data.get("status") == "CANCELED":
-                    logger.info(
-                        f"Got the cancellation for order {data.get('id_pasticoni')}"
-                    )
-
-
 class Analyst(rabbitMQConsumer):
 
     def _parse_payload(self, text: str):
@@ -93,26 +67,11 @@ class Analyst(rabbitMQConsumer):
         )
 
 
-"""
-async def main():
-    await asyncio.gather(
-        consume_market_data(),  # existing market-data loop
-        consume_accountant_updates(),  # new cancellation listener
-    )
-"""
-
-"""
 def main(broker: Broker) -> None:
-    # Start accountant update listener in a separate thread
-    update_thread = threading.Thread(
-        target=consume_accountant_updates, daemon=True
-    )
-    update_thread.start()
-
     # Main analyst logic (market data listener)
     analyst = Analyst(broker, get_sleep())
     analyst.consume()
-"""
+
 
 if __name__ == "__main__":
     main(broker)
