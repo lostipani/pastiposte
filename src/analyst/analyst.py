@@ -15,23 +15,6 @@ from commons.configuration import get_rabbitmq_params
 from interfaces.broker import Broker
 
 
-def consume_exchange_response_updates():
-    """Listen to global accountant updates (exchange_response)."""
-    params = get_rabbitmq_params()
-    params["routing_key_in"] = os.getenv(
-        "BROKER_ROUTING_KEY_ACCOUNTANT", "exchange_response"
-    )
-    response_broker = Broker.factory(backend="rabbitmq", **params)
-
-    def callback_fun(channel, method, properties, body):
-        update = json.loads(body)
-        logger.info(
-            f"########## Received global accountant update: {update} ##########"
-        )
-
-    response_broker.get(callback=callback_fun)
-
-
 class Analyst(rabbitMQConsumer):
 
     def _parse_payload(self, text: str):
@@ -80,16 +63,14 @@ class Analyst(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
-    # Main analyst logic first
+    # Start accountant update listener in a separate thread
+    update_thread = threading.Thread(
+        target=consume_accountant_updates, daemon=True
+    )
+    update_thread.start()
+
+    # Main analyst logic (market data listener)
     analyst = Analyst(broker, get_sleep())
-
-    # Launch accountant listener threads as daemons
-    threading.Thread(target=consume_accountant_updates, daemon=True).start()
-
-    # If you also have the exchange_response listener, start it too
-    # threading.Thread(target=consume_exchange_response_updates, daemon=True).start()
-
-    # Start the analyst event loop (emits orders)
     analyst.consume()
 
 
