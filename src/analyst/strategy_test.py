@@ -8,6 +8,10 @@ import aio_pika
 import os
 import json
 
+from analyst.events import parse_raw, CandleEvent, OrderUpdateEvent
+from analyst.state import StrategyState
+
+
 RABBIT_URL = os.getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq/")
 EXCHANGE_NAME = os.getenv("BROKER_EXCHANGE", "exchange")
 
@@ -35,25 +39,27 @@ async def consume_queue(routing_key: str):
                 await EVENT_Q.put((routing_key, body))
 
 
+STATE = StrategyState()
+
+
 async def brain_loop():
-    """Central processor that handles all incoming events serially."""
     while True:
         routing_key, body = await EVENT_Q.get()
         try:
-            try:
-                # try to decode JSON safely
-                data = json.loads(body)
-            except json.JSONDecodeError:
-                # fallback: maybe single quotes or partial
-                data = body
-            if routing_key == ROUTING_KEY_CANDLES:
-                print(f"[CANDLE] {str(data)[:120]}")
-            elif routing_key == ROUTING_KEY_ORDERS:
-                print(f"[ORDER_UPDATE] {str(data)[:120]}")
-            else:
-                print(f"[UNKNOWN {routing_key}] {body[:80]}")
-        except Exception as e:
-            print(f"Error while processing message from {routing_key}: {e}")
+            ev = parse_raw(routing_key, body)
+            if ev is None:
+                continue
+            if isinstance(ev, CandleEvent):
+                ps = STATE.ps(ev.pair)
+                ps.last = ev.price
+                ps.stats.update(ev.price)
+                print(
+                    f"[CANDLE] {ev.pair} last={ev.price:.6f} avg={ps.stats.mean:.6f} std={ps.stats.std:.6f} n={ps.stats.n}"
+                )
+            else:  # OrderUpdateEvent
+                print(
+                    f"[ORDER] {ev.pair} {ev.status} id={ev.order_id} exec={ev.executed_qty}"
+                )
         finally:
             EVENT_Q.task_done()
 
