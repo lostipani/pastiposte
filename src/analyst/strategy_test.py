@@ -1,7 +1,7 @@
 # enter into the container
 #  docker exec -it deploy-analyst-1 bash
 # run the script
-# python -m analyst.async_listener_test
+# python -m analyst.strategy_test
 
 import asyncio
 import aio_pika
@@ -10,6 +10,10 @@ import json
 
 from analyst.events import parse_raw, CandleEvent, OrderUpdateEvent
 from analyst.state import StrategyState
+
+from analyst.events import parse_raw, CandleEvent, OrderUpdateEvent
+from analyst.strategy_matrix import MatrixStrategy
+from analyst.async_publisher import AsyncPublisher
 
 
 RABBIT_URL = os.getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq/")
@@ -40,6 +44,8 @@ async def consume_queue(routing_key: str):
 
 
 STATE = StrategyState()
+PUBLISHER = AsyncPublisher()
+STRATEGY = None  # set after publisher starts
 
 
 async def brain_loop():
@@ -49,19 +55,26 @@ async def brain_loop():
             ev = parse_raw(routing_key, body)
             if ev is None:
                 continue
-            if isinstance(ev, CandleEvent):
-                ps = STATE.ps(ev.pair)
-                ps.last = ev.price
-                ps.stats.update(ev.price)
-                print(
-                    f"[CANDLE] {ev.pair} last={ev.price:.6f} avg={ps.stats.mean:.6f} std={ps.stats.std:.6f} n={ps.stats.n}"
-                )
-            else:  # OrderUpdateEvent
-                print(
-                    f"[ORDER] {ev.pair} {ev.status} id={ev.order_id} exec={ev.executed_qty}"
-                )
+            await STRATEGY.handle(ev)
         finally:
             EVENT_Q.task_done()
+
+
+async def main():
+    await PUBLISHER.start()
+    global STRATEGY
+    STRATEGY = MatrixStrategy(
+        PUBLISHER, k_sigma=2.0, trail_pct=0.02, min_n=20, default_qty=0.001
+    )
+    consumers = [
+        asyncio.create_task(consume_queue(ROUTING_KEY_CANDLES)),
+        asyncio.create_task(consume_queue(ROUTING_KEY_ORDERS)),
+        asyncio.create_task(brain_loop()),
+    ]
+    print(
+        f"Listening on routing keys '{ROUTING_KEY_CANDLES}' and '{ROUTING_KEY_ORDERS}'"
+    )
+    await asyncio.gather(*consumers)
 
 
 async def main():
