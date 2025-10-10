@@ -35,20 +35,20 @@ async def brain_loop():
     while True:
         routing_key, body = await EVENT_Q.get()
         try:
+            try:
+                # try to decode JSON safely
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                # fallback: maybe single quotes or partial
+                data = body
             if routing_key == ROUTING_KEY_CANDLES:
-                data = (
-                    json.loads(body.replace("'", '"'))
-                    if body.strip().startswith("{")
-                    else body
-                )
-                print(f"[CANDLE] {str(data)[:100]}")
+                print(f"[CANDLE] {str(data)[:120]}")
             elif routing_key == ROUTING_KEY_ORDERS:
-                data = (
-                    json.loads(body) if body.strip().startswith("{") else body
-                )
-                print(f"[ORDER_UPDATE] {str(data)[:100]}")
+                print(f"[ORDER_UPDATE] {str(data)[:120]}")
             else:
                 print(f"[UNKNOWN {routing_key}] {body[:80]}")
+        except Exception as e:
+            print(f"Error while processing message from {routing_key}: {e}")
         finally:
             EVENT_Q.task_done()
 
