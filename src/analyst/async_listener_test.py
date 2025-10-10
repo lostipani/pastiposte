@@ -19,7 +19,7 @@ async def main():
 
     # Declare exchange first (same name/type as publisher)
     exchange = await channel.declare_exchange(
-        EXCHANGE_NAME, aio_pika.ExchangeType.DIRECT, durable=True
+        EXCHANGE_NAME, aio_pika.ExchangeType.DIRECT, durable=False
     )
 
     # Declare an exclusive, auto-deleted queue with random name
