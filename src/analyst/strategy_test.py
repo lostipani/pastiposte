@@ -69,7 +69,7 @@ async def main():
         PUBLISHER, k_sigma=2.0, trail_pct=0.02, min_n=20, default_qty=0.001
     )
 
-    # 3. define brain_loop as closure so it captures strategy directly
+    # 3. brain loop uses local strategy
     async def brain_loop():
         while True:
             routing_key, body = await EVENT_Q.get()
@@ -78,10 +78,12 @@ async def main():
                 if ev is None:
                     continue
                 await strategy.handle(ev)
+            except Exception as e:
+                print(f"Brain error: {e}")
             finally:
                 EVENT_Q.task_done()
 
-    # 4. launch listeners only after setup is complete
+    # 4. launch consumers after everything is ready
     consumers = [
         asyncio.create_task(consume_queue(ROUTING_KEY_CANDLES)),
         asyncio.create_task(consume_queue(ROUTING_KEY_ORDERS)),
