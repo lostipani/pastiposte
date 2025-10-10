@@ -61,20 +61,29 @@ async def brain_loop():
 
 
 async def main():
+    # start publisher first
     await PUBLISHER.start()
+
+    # initialize strategy after publisher exists
     global STRATEGY
     STRATEGY = MatrixStrategy(
         PUBLISHER, k_sigma=2.0, trail_pct=0.02, min_n=20, default_qty=0.001
     )
-    consumers = [
+
+    # start consumers and brain after setup
+    tasks = [
         asyncio.create_task(consume_queue(ROUTING_KEY_CANDLES)),
         asyncio.create_task(consume_queue(ROUTING_KEY_ORDERS)),
         asyncio.create_task(brain_loop()),
     ]
+
     print(
         f"Listening on routing keys '{ROUTING_KEY_CANDLES}' and '{ROUTING_KEY_ORDERS}'"
     )
-    await asyncio.gather(*consumers)
+    try:
+        await asyncio.gather(*tasks)
+    except asyncio.CancelledError:
+        pass
 
 
 async def main():
