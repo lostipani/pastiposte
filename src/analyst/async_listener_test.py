@@ -7,7 +7,7 @@ RABBIT_URL = os.getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq/")
 EXCHANGE_NAME = os.getenv("BROKER_EXCHANGE", "exchange")
 
 ROUTING_KEY_CANDLES = os.getenv("ROUTING_KEY_CANDLES", "kline_1m")
-ROUTING_KEY_ORDERS = os.getenv("ROUTING_KEY_ORDERS", "exchange_response")
+ROUTING_KEY_ORDERS = os.getenv("ROUTING_KEY_ORDERS", "orders.exec_updates")
 
 EVENT_Q = asyncio.Queue()
 
