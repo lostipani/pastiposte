@@ -33,7 +33,7 @@ class rabbitMQConsumer(Consumer):
     """
 
     @abstractmethod
-    def _action(self, data: Any) -> Any:
+    def _action(self, data: Any, *args) -> Any:
         """
         This is the consuming action once the message is fetched from the queue
         """
@@ -48,8 +48,7 @@ class rabbitMQConsumer(Consumer):
             """
             RabbitMQ dependent callback
             """
-            del channel, method, properties
-            self._action(body.decode("utf-8"))
+            self._action(body.decode("utf-8"), channel, method, properties)
             sleep(self.sleep)
 
         self.broker.get(callback=callback_fun)

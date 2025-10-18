@@ -1,0 +1,104 @@
+services:
+
+  server-sim:
+    profiles: [ 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/server/Dockerfile
+    networks:
+      - local-network
+    ports:
+      - "12345:12345"
+    environment:
+      WS_PORT: 12345
+      LOG_LEVEL: "INFO"
+      SLEEP: 1
+    healthcheck:
+      test: [ "CMD-SHELL", "curl http://localhost:12345/healthcheck" ]
+      interval: 30s
+      timeout: 30s
+      start_period: 10s
+      retries: 3
+
+  listener-ws-1:
+    profiles: [ 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "ws://server-sim:12345/ws"
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_OUT: "one"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server-sim:
+        condition: service_healthy
+
+  listener-ws-2:
+    profiles: [ 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "ws://server-sim:12345/ws"
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_OUT: "two"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server-sim:
+        condition: service_healthy
+
+  consumer-sim:
+    profiles: [ 'simulation' ]
+    build:
+      context: ../
+      dockerfile: build/queue_logger/Dockerfile
+    networks:
+      - local-network
+    environment:
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_IN: "one, two"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server-sim:
+        condition: service_healthy
+
+  rabbitmq:
+    profiles: [ 'real-world', 'simulation', 'rabbit-test' ]
+    image: rabbitmq:4
+    networks:
+      - local-network
+    ports:
+      - "35672:5672"
+    healthcheck:
+      test: >
+        bash -lc "rabbitmqctl await_startup &&
+                  rabbitmq-diagnostics -q check_running &&
+                  rabbitmq-diagnostics -q check_port_connectivity" 
+      interval: 30s
+      timeout: 30s
+      start_period: 20s
+      retries: 3
+
+networks:
+  local-network:
+    driver: bridge

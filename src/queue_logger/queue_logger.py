@@ -9,8 +9,10 @@ from commons.rabbitmq import broker
 
 class queueLogger(rabbitMQConsumer):
 
-    def _action(self, data: Any):
+    def _action(self, data: Any, *args):
         logger.info(data)
+        for arg in args:
+            logger.info(arg)
 
 
 def main(broker: Broker) -> None:
