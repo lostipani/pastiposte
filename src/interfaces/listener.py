@@ -68,6 +68,7 @@ class ListenerWSAuthn(Listener):
         self.api_key = os.getenv("BINANCE_API_KEY")
 
     def get_listen_key(self) -> str:
+        logger.info(self.authn_url)
         response = requests.get(
             self.authn_url, headers={"X-MBX-APIKEY": self.api_key}
         )
