@@ -1,7 +1,7 @@
 services:
 
   rabbitmq:
-    profiles: [ 'real-world', 'simulation', 'rabbit-test' ]
+    profiles: [ 'real-world' ]
     image: rabbitmq:4
     networks:
       - local-network
@@ -17,8 +17,8 @@ services:
       start_period: 20s
       retries: 3
 
-  listener-ws:
-    profiles: [ 'real-world', 'rabbit-test' ]
+  listener-binance-kline1m:
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
@@ -31,6 +31,27 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY_OUT: "kline_1m"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  listener-binance-account:
+    profiles: [ 'real-world' ]
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    env_file: ../.env
+    environment:
+      URL: "wss://stream.binance.com:9443/ws"
+      AUTHN_URL: "https://api.binance.com/api/v3/userDataStream"
+      SLEEP: 0
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "direct"
+      BROKER_ROUTING_KEY_OUT: "account.orders"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -73,7 +94,7 @@ services:
     networks: [ local-network ]
 
   analyst:
-    profiles: [ 'real-world', 'simulation', 'rabbit-test' ]
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/analyst/Dockerfile
@@ -93,7 +114,7 @@ services:
         condition: service_healthy
 
   db-writer:
-    profiles: [ 'real-world' ]
+    profiles: [ 'OFFreal-world' ]
     build:
       context: ../
       dockerfile: build/db_writer/Dockerfile
@@ -142,16 +163,11 @@ services:
       dockerfile: build/accountant/Dockerfile
     networks:
       - local-network
-    env_file: ../.env
     environment:
-      DATABASE_URL: "postgresql://app_writer:app_writer@postgres:5432/db_orders"
-      # BINANCE_API_KEY: "${BINANCE_API_KEY}"
-      # BINANCE_API_SECRET: "${BINANCE_API_SECRET}"
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_IN: "orders.new"
-      BROKER_ROUTING_KEY_OUT: "orders.exec_updates"
+      BROKER_ROUTING_KEY_IN: "account.orders, orders.outgoing"
       SLEEP: 0
       LOG_LEVEL: "INFO"
     depends_on:

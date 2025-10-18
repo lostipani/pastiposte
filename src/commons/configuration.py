@@ -9,9 +9,17 @@ class MissingParametersException(Exception):
 
 def get_URL() -> str:
     try:
-        return str(os.environ.get("URL", None))
+        return os.environ.get("URL", None)
     except KeyError:
         logging.error("missing URL")
+        raise MissingParametersException
+
+
+def get_authn_URL() -> str:
+    try:
+        return os.environ.get("authn_URL", None)
+    except KeyError:
+        logging.error("missing URL for authentication")
         raise MissingParametersException
 
 
