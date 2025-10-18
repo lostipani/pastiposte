@@ -17,7 +17,7 @@ def get_URL() -> str:
 
 def get_authn_URL() -> str:
     try:
-        return os.environ.get("authn_URL", None)
+        return os.environ.get("AUTHN_URL", None)
     except KeyError:
         logging.error("missing URL for authentication")
         raise MissingParametersException
