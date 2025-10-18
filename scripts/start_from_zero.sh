@@ -17,5 +17,5 @@ if [ "$(docker volume ls -q)" ]; then
 fi
 
 echo "Building containers and upping them"
-docker compose --project-directory deploy --profile real-world up --build
-
+#docker compose --project-directory deploy --profile real-world up --build
+docker compose --project-directory deploy --profile test-LB up --build
