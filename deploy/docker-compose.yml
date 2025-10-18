@@ -37,7 +37,7 @@ services:
         condition: service_healthy
 
   listener-binance-account:
-    profiles: [ 'real-world' ]
+    profiles: [ 'real-world', 'test-LB' ]
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
