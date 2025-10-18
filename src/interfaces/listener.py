@@ -68,7 +68,6 @@ class ListenerWSAuthn(Listener):
         self.api_key = os.getenv("BINANCE_API_KEY")
 
     def get_listen_key(self) -> str:
-        logger.info(self.authn_url)
         response = requests.post(
             self.authn_url, headers={"X-MBX-APIKEY": self.api_key}
         )
@@ -85,8 +84,6 @@ class ListenerWSAuthn(Listener):
             )
 
         url = f"{self.url}/{self.get_listen_key()}"
-        logger.info(url)
-
         try:
             with connect(url) as websocket:
                 for message in websocket:
@@ -123,9 +120,6 @@ class ListenerHTTP(Listener):
 
 def main(broker: Broker):
     listener = Listener.factory(get_URL(), authn_url=get_authn_URL())
-    logger.info(listener.url)
-    logger.info(listener.authn_url)
-    logger.info(listener.api_key)
     listener.run(broker, get_sleep())
 
 
