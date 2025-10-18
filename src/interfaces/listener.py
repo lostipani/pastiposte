@@ -69,7 +69,7 @@ class ListenerWSAuthn(Listener):
 
     def get_listen_key(self) -> str:
         logger.info(self.authn_url)
-        response = requests.get(
+        response = requests.post(
             self.authn_url, headers={"X-MBX-APIKEY": self.api_key}
         )
         response.raise_for_status()
