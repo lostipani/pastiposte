@@ -1,12 +1,12 @@
 from interfaces.broker import Broker
-from commons.configuration import get_rabbitmq_params
+from commons.configuration import Configuration
 
-broker_params = get_rabbitmq_params()
+config = Configuration()
 broker = Broker.factory(
     backend="rabbitmq",
-    host=broker_params.get("host"),
-    exchange=broker_params.get("exchange"),
-    exchange_type=broker_params.get("exchange_type"),
-    routing_key_in=broker_params.get("routing_key_in"),
-    routing_key_out=broker_params.get("routing_key_out"),
+    host=config["host"],
+    exchange=config["exchange"],
+    exchange_type=config["exchange_type"],
+    routing_key_in=config["routing_key_in"],
+    routing_key_out=config["routing_key_out"],
 )
