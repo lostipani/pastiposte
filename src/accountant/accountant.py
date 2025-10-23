@@ -19,6 +19,7 @@ class Accountant(rabbitMQConsumer):
     def _action(self, data, *args):
         if args[1].routing_key == "account.orders":
             logger.info(data)
+            fa un filtro e rigira all'analist taggato
         elif args[1].routing_key == "orders.outgoing":
             data = json.loads(data)
             self.active_orders[data.get("id_pasticoni")] = data.get(

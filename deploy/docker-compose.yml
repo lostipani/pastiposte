@@ -103,8 +103,8 @@ services:
       BROKER_HOST: rabbitmq # this matches the mq service name
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: "kline_1m, orders.exec_updates"
-      BROKER_ROUTING_KEY_OUT: outgoing_orders
+      BROKER_ROUTING_KEY_IN: "kline_1m, account.exec_updates"
+      BROKER_ROUTING_KEY_OUT: orders.outgoing
       BROKER_ROUTING_KEY_ACCOUNTANT: exchange_response
       ANALYST_ID: analyst_1
       SLEEP: 10
@@ -168,6 +168,7 @@ services:
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
       BROKER_ROUTING_KEY_IN: "account.orders, orders.outgoing"
+      BROKER_ROUTING_KEY_OUT: "account.exec_updates"
       SLEEP: 0
       LOG_LEVEL: "INFO"
     depends_on:
