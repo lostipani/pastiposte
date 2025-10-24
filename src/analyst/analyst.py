@@ -13,21 +13,21 @@ class AnalystStateMachine:
     """
     Trading logic state machine.
     States:
-        1. WAIT_OPEN        -> waiting for signal to open a position
-        2. WAIT_FILL_ENTRY  -> order placed, waiting for entry fill
-        3. WAIT_REVERSAL    -> position open, waiting for reversal signal
-        4. WAIT_FILL_EXIT   -> order placed, waiting for exit fill
+        1. W2_OPEN     -> waiting for signal to open a position
+        2. W4_FENTRY  -> order placed, waiting for entry fill
+        3. W4_REVERSAL    -> position open, waiting for reversal signal
+        4. W4_FEXIT   -> order placed, waiting for exit fill
     """
 
-    states = ["WAIT_OPEN", "WAIT_FILL_ENTRY", "WAIT_REVERSAL", "WAIT_FILL_EXIT"]
+    states = ["W2_OPEN", "W4_FENTRY", "W4_REVERSAL", "W4_FEXIT"]
 
     transitions = [
         # price condition or strategy signal reached
-        {"trigger": "condition_reached", "source": "WAIT_OPEN", "dest": "WAIT_FILL_ENTRY"},
-        {"trigger": "condition_reached", "source": "WAIT_REVERSAL", "dest": "WAIT_FILL_EXIT"},
+        {"trigger": "condition_reached", "source": "W2_OPEN", "dest": "W4_FENTRY"},
+        {"trigger": "condition_reached", "source": "W4_REVERSAL", "dest": "W4_FEXIT"},
         # order fills
-        {"trigger": "filled", "source": "WAIT_FILL_ENTRY", "dest": "WAIT_REVERSAL"},
-        {"trigger": "filled", "source": "WAIT_FILL_EXIT", "dest": "WAIT_OPEN"},
+        {"trigger": "filled", "source": "W4_FENTRY", "dest": "W4_REVERSAL"},
+        {"trigger": "filled", "source": "W4_FEXIT", "dest": "W2_OPEN"},
     ]
 
     def __init__(self):
@@ -39,7 +39,7 @@ class AnalystStateMachine:
             model=self,
             states=self.states,
             transitions=self.transitions,
-            initial="WAIT_OPEN",
+            initial="WAIT_2_OPEN",
             ignore_invalid_triggers=True,
             after_state_change="log_state",
         )
