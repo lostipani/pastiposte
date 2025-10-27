@@ -3,7 +3,7 @@ from typing import Any
 from interfaces.broker import Broker
 from interfaces.consumer import rabbitMQConsumer
 from commons.logger import logger
-from commons.configuration import get_sleep
+from commons.configuration import Configuration
 from commons.rabbitmq import broker
 
 
@@ -14,7 +14,8 @@ class queueLogger(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
-    queue_logger = queueLogger(broker, get_sleep())
+    config = Configuration()
+    queue_logger = queueLogger(broker, config["sleep"])
     queue_logger.consume()
 
 

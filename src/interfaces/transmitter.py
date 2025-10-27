@@ -3,7 +3,7 @@ from os import getenv
 
 from binance.spot import Spot
 
-from commons.configuration import get_URL, get_sleep
+from commons.configuration import Configuration
 from interfaces.broker import Broker
 from commons.rabbitmq import broker
 from commons.logger import logger
@@ -45,8 +45,9 @@ class TransmitterBinanceHTTP:
 
 
 def main(broker: Broker):
-    transmitter = TransmitterBinanceHTTP(get_URL(), broker)
-    transmitter.run(get_sleep())
+    config = Configuration()
+    transmitter = TransmitterBinanceHTTP(config["url"], broker)
+    transmitter.run(config["sleep"])
 
 
 if __name__ == "__main__":

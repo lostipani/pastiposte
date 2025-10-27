@@ -3,9 +3,8 @@ import time, json, ast, uuid
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
 
-from commons.configuration import get_sleep
+from commons.configuration import Configuration
 from commons.rabbitmq import broker
-from commons.logger import logger
 
 
 class Analyst(rabbitMQConsumer):
@@ -55,7 +54,8 @@ class Analyst(rabbitMQConsumer):
 
 
 def main(broker: Broker) -> None:
-    analyst = Analyst(broker, get_sleep())
+    config = Configuration()
+    analyst = Analyst(broker, config["sleep"])
     analyst.consume()
 
 

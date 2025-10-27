@@ -131,7 +131,7 @@ services:
     networks: [ local-network ]
 
   analyst:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/analyst/Dockerfile
@@ -149,7 +149,7 @@ services:
         condition: service_healthy
 
   db-writer:
-    profiles: [ 'real-world', 'simulation' ]
+    profiles: [ 'real-world' ]
     build:
       context: ../
       dockerfile: build/db_writer/Dockerfile

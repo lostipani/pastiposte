@@ -15,6 +15,14 @@ class Singleton(type):
 class Configuration(object, metaclass=Singleton):
     def __init__(self):
         self.settings = os.environ
+        self.unprefix_broker_params()
+
+    def unprefix_broker_params(self):
+        return {
+            env.replace("BROKER_", "").lower(): self.settings[env]
+            for env in self.settings
+            if "BROKER_" in env.upper()
+        }
 
 
 def get_URL() -> str:
