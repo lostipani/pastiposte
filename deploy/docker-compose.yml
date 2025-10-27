@@ -51,7 +51,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_OUT: "account.orders"
+      BROKER_ROUTING_KEY_OUT: "accountant.orders"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
@@ -103,10 +103,8 @@ services:
       BROKER_HOST: rabbitmq # this matches the mq service name
       BROKER_EXCHANGE: exchange
       BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: "kline_1m, account.exec_updates"
+      BROKER_ROUTING_KEY_IN: "kline_1m, accountant.exec_updates"
       BROKER_ROUTING_KEY_OUT: orders.outgoing
-      BROKER_ROUTING_KEY_ACCOUNTANT: exchange_response
-      ANALYST_ID: analyst_1
       SLEEP: 10
       LOG_LEVEL: "INFO"
     depends_on:
@@ -149,7 +147,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_IN: "outgoing_orders"
+      BROKER_ROUTING_KEY_IN: "orders.outgoing"
       BROKER_ROUTING_KEY_OUT: "exchange_response"
       LOG_LEVEL: "INFO"
     depends_on:
@@ -167,8 +165,8 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_IN: "account.orders, orders.outgoing"
-      BROKER_ROUTING_KEY_OUT: "account.exec_updates"
+      BROKER_ROUTING_KEY_IN: "accountant.orders, orders.outgoing"
+      BROKER_ROUTING_KEY_OUT: "accountant.exec_updates"
       SLEEP: 0
       LOG_LEVEL: "INFO"
     depends_on:
