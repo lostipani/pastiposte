@@ -10,8 +10,8 @@ from websockets.sync.client import connect
 
 from commons.logger import logger
 from commons.configuration import Configuration
-from interfaces.broker import Broker
-from commons.rabbitmq import broker
+from interfaces.message_broker import Broker
+from commons.broker import broker
 
 
 class Listener:
@@ -39,9 +39,7 @@ class ListenerWS(Listener):
             """
             This is the action of the listener
             """
-            broker.add(
-                str({"source": self.url, "message": json.loads(message)})
-            )
+            broker.add(message)
 
         try:
             with connect(self.url) as websocket:
@@ -63,7 +61,7 @@ class ListenerHTTP(Listener):
             """
             This is the action of the listener
             """
-            broker.add(str({"source": self.url, "message": message}))
+            broker.add(message)
 
         @retry(HTTPError, tries=3, delay=2, logger=logger)
         def _get(url: str) -> Dict[str, Any]:

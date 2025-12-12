@@ -1,10 +1,11 @@
+import json
 from abc import ABC, abstractmethod
 from queue import Queue
 from typing import Any, List
 
 import pika
 
-Value = Any
+Message = Any
 
 
 class Broker(ABC):
@@ -18,16 +19,13 @@ class Broker(ABC):
     proper derived class depending on the chosen backend.
 
     Args
-        backend: an instance of the Value container
+        backend: an instance of the Message container
     Raises
         BrokerNotImplementedError
     """
 
     def __init__(self, backend: Any):
         self.backend = backend
-
-    def __str__(self) -> str:
-        return str(self.backend)
 
     @staticmethod
     def factory(backend, **kwargs):
@@ -41,11 +39,11 @@ class Broker(ABC):
             raise NotImplementedError
 
     @abstractmethod
-    def add(self, value: Value, **kwargs):
+    def add(self, Message: Message, **kwargs):
         pass
 
     @abstractmethod
-    def get(self, **kwargs) -> Value:
+    def get(self, **kwargs) -> Message:
         pass
 
     @abstractmethod
@@ -54,15 +52,18 @@ class Broker(ABC):
 
 
 class BrokerList(Broker):
+    """
+    A broker whose backend is a Python list
+    """
 
-    def __init__(self, backend: List[Value]):
+    def __init__(self, backend: List[Message]):
         super().__init__(backend)
 
-    def add(self, value: Value, **kwargs):
+    def add(self, Message: Message, **kwargs):
         del kwargs
-        self.backend.append(value)
+        self.backend.append(Message)
 
-    def get(self, **kwargs) -> Value:
+    def get(self, **kwargs) -> Message:
         del kwargs
         return self.backend[-1]
 
@@ -71,15 +72,18 @@ class BrokerList(Broker):
 
 
 class BrokerQueue(Broker):
+    """
+    A broker whose backend is a Python Queue
+    """
 
     def __init__(self, backend: Queue):
         super().__init__(backend)
 
-    def add(self, value: Value, **kwargs):
+    def add(self, Message: Message, **kwargs):
         del kwargs
-        self.backend.put(value)
+        self.backend.put(Message)
 
-    def get(self, **kwargs) -> Value:
+    def get(self, **kwargs) -> Message:
         del kwargs
         return self.backend.get()
 
@@ -88,6 +92,13 @@ class BrokerQueue(Broker):
 
 
 class BrokerRabbitMQ(Broker):
+    """
+    A broker whose backend is a RabbitMQ instance.
+
+    Deps:
+        - pika: python client for RabbitMQ
+        - json: message serialization
+    """
 
     def __init__(self, **kwargs):
         super().__init__("rabbitmq")
@@ -101,17 +112,21 @@ class BrokerRabbitMQ(Broker):
             exchange_type=self.params.get("exchange_type"),
         )
 
-    def add(self, value: Value):
+    def add(self, Message: Message, routing_key: str | None = None):
         self.channel.basic_publish(
             exchange=self.params.get("exchange"),
-            routing_key=self.params.get("routing_key_out"),
-            body=value,
+            routing_key=(
+                routing_key
+                if routing_key
+                else self.params.get("routing_key_out")
+            ),
+            body=json.dumps(Message),
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent
             ),
         )
 
-    def get(self, **kwargs) -> Value:
+    def get(self, **kwargs) -> Message:
         for routing_key in (
             rkey.strip() for rkey in self.params["routing_key_in"].split(",")
         ):
@@ -130,7 +145,4 @@ class BrokerRabbitMQ(Broker):
         self.channel.start_consuming()
 
     def is_empty(self) -> bool:
-        queue = self.channel.queue_declare(
-            queue=self.params.get("queue"), passive=True
-        )
-        return queue.method.message_count == 0
+        raise NotImplementedError

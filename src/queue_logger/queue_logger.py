@@ -1,16 +1,16 @@
 from typing import Any
 
-from interfaces.broker import Broker
+from interfaces.message_broker import Broker
 from interfaces.consumer import rabbitMQConsumer
 from commons.logger import logger
 from commons.configuration import Configuration
-from commons.rabbitmq import broker
+from commons.broker import broker
 
 
 class queueLogger(rabbitMQConsumer):
 
-    def _action(self, data: Any):
-        logger.info(data)
+    def _action(self, message: Any):
+        logger.info(message)
 
 
 def main(broker: Broker) -> None:
