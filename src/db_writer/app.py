@@ -4,7 +4,7 @@ import psycopg
 
 from interfaces.consumer import rabbitMQConsumer
 from interfaces.broker import Broker
-from commons.configuration import get_sleep
+from commons.configuration import Configuration
 from commons.rabbitmq import broker
 from commons.logger import logger
 
@@ -74,9 +74,10 @@ def wait_for_orders_table(conn, retries=30, delay=1.0):
 
 
 def main(broker: Broker) -> None:
+    config = Configuration()
     db = psycopg.connect(DB_URL, autocommit=False)
     wait_for_orders_table(db)
-    db_writer = DBWriter(broker, get_sleep(), db_conn=db)
+    db_writer = DBWriter(broker, config["sleep"], db_conn=db)
     db_writer.consume()
 
 
