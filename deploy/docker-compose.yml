@@ -1,7 +1,8 @@
 services:
 
-  server-sim:
-    profiles: [ 'simulation' ]
+  server:
+    annotations:
+      description: "sources"
     build:
       context: ../
       dockerfile: build/server/Dockerfile
@@ -20,29 +21,55 @@ services:
       start_period: 10s
       retries: 3
 
-  listener-ws-sim:
-    profiles: [ 'simulation' ]
+  listener-ws:
+    annotations:
+      description: "websocket connection to source"
     build:
       context: ../
       dockerfile: build/listener/Dockerfile
     networks:
       - local-network
     environment:
-      URL: "ws://server-sim:12345/ws"
+      URL: "ws://server:12345/ws"
       SLEEP: 0
+      BROKER_BACKEND: "rabbitmq"
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_OUT: "simulation"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_OUT: "source.ws"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
-      server-sim:
+      server:
         condition: service_healthy
 
-  consumer-sim:
-    profiles: [ 'simulation' ]
+  listener-http:
+    annotations:
+      description: "HTTP requests to source"
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "http://server:12345/http"
+      SLEEP: 5
+      BROKER_BACKEND: "rabbitmq"
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_OUT: "source.http"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+
+  queue-logger:
+    annotations:
+      description: "log all sources and avg of source.ws"
     build:
       context: ../
       dockerfile: build/queue_logger/Dockerfile
@@ -50,19 +77,44 @@ services:
       - local-network
     environment:
       SLEEP: 0
+      BROKER_BACKEND: "rabbitmq"
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_IN: "simulation"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_IN: "source.*, transformed.avg"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:
         condition: service_healthy
-      server-sim:
+      server:
+        condition: service_healthy
+
+  transformer:
+    annotations:
+      description: "evaluate avg and std of source.ws"
+    build:
+      context: ../
+      dockerfile: build/transformer/Dockerfile
+    networks:
+      - local-network
+    environment:
+      SLEEP: 0
+      BROKER_BACKEND: "rabbitmq"
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_IN: "source.ws"
+      BROKER_ROUTING_KEY_OUT: "transformed.std, transformed.avg"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server:
         condition: service_healthy
 
   rabbitmq:
-    profiles: [ 'real-world', 'simulation' ]
+    annotations:
+      description: "message broker"
     image: rabbitmq:4
     networks:
       - local-network
@@ -75,124 +127,6 @@ services:
       start_period: 20s
       retries: 3
 
-  listener-ws:
-    profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/listener/Dockerfile
-    networks:
-      - local-network
-    environment:
-      URL: "wss://stream.binance.com:9443/ws/bnbusdc@kline_1m"
-      SLEEP: 0.1
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_OUT: "kline_1m"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  listener-http:
-    profiles: [ 'OFFreal-world' ]
-    build:
-      context: ../
-      dockerfile: build/listener/Dockerfile
-    networks:
-      - local-network
-    environment:
-      URL: "https://api.frankfurter.dev/v1/latest?base=USD"
-      SLEEP: 1
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_OUT: "frankfurter"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  postgres:
-    profiles: [ 'real-world', 'pgonly' ]
-    image: postgres:16
-    env_file: ./initdb/.env
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data # ? do sta?
-      - ./initdb:/docker-entrypoint-initdb.d:ro # auto roles on first init
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d db_orders" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
-    networks: [ local-network ]
-
-  analyst:
-    profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/analyst/Dockerfile
-    networks: [ local-network ]
-    environment:
-      BROKER_HOST: rabbitmq # this matches the mq service name
-      BROKER_EXCHANGE: exchange
-      BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: kline_1m
-      BROKER_ROUTING_KEY_OUT: outgoing_orders
-      SLEEP: 10
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  db-writer:
-    profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/db_writer/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://app_writer:app_writer@postgres:5432/db_orders
-      SLEEP: 0
-      LOG_LEVEL: "INFO"
-      BROKER_HOST: rabbitmq
-      BROKER_EXCHANGE: exchange
-      BROKER_EXCHANGE_TYPE: direct
-      BROKER_ROUTING_KEY_IN: outgoing_orders
-    networks: [ local-network ]
-    restart: unless-stopped
-
-  transmitter-binance-http:
-    profiles: [ 'real-world' ]
-    build:
-      context: ../
-      dockerfile: build/transmitter/Dockerfile
-    networks:
-      - local-network
-    environment:
-      URL: "https://api.binance.com"
-      SLEEP: 0
-      BROKER_HOST: "rabbitmq"
-      BROKER_EXCHANGE: "exchange"
-      BROKER_EXCHANGE_TYPE: "direct"
-      BROKER_ROUTING_KEY_IN: "outgoing_orders"
-      LOG_LEVEL: "INFO"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
 networks:
   local-network:
     driver: bridge
-
-volumes:
-  pgdata:
-
-

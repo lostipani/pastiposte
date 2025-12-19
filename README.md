@@ -1,50 +1,56 @@
-# A producer-consumer service for multi-sources data
+# A producer-consumer service for multi-protocol sources
+
+## Description
+A `Server` exposes endpoints for different communication protocols to produce
+data of various kind. A `Listener` fetches such data according to the protocol,
+and pushes it to a message passing `Broker` facility. One or more `Consumer`s 
+access the data to operate on it.
+
+In the here presented implementation:
+* Endpoint `/ws` produces a list of Normally distributed floats.
+* Endpoint `/http` produces a scalar character uniformely distributed.
+* The `Broker` is an instance of RabbitMQ.
+* A consumer `Queue Logger` retrieves data from the broker and logs it.
+* A consumer `Transformer` evaluates some statistics on some of the data, and
+sends it back to the broker.
 ```mermaid
 flowchart LR
-  subgraph Extracting
-  listHTTP@{ shape: rect, label: "Listener HTTP" } --> s1@{ shape: lean-r, label: "source HTTP" }
-  listWS@{ shape: rect, label: "Listener WS" } --> s2@{ shape: lean-r, label: "source WS" }
+  subgraph Sources
+  sourceHTTP@{ shape: lean-r, label: "source HTTP" }
+  sourceWS@{ shape: lean-r, label: "source WS" }
   end
 
-  listHTTP & listWS --> exc@{ shape: hex, label: "Exchange" }
-  exc --> q1@{ shape: das, label: "queue key1" }
-  exc --> q2@{ shape: das, label: "queue key2" }
+  subgraph **Pastiposte**
+  listenerHTTP@{ shape: lin-rect, label: "Listener HTTP" }
+  listenerWS@{ shape: lin-rect, label: "Listener WS" }
+  listenerHTTP -->  sourceHTTP
+  listenerWS <--> sourceWS
+  listenerHTTP -- source.http --> broker@{ shape: hex, label: "Broker" }
+  listenerWS -- source.ws --> broker@{ shape: hex, label: "Broker" }
 
-  subgraph Consuming
-  q1 & q2 --> Consumer
+  broker --> q1@{ shape: das, label: "source.ws" }
+  broker --> q2@{ shape: das, label: "source.http" }
+  broker --> q3@{ shape: das, label: "source.ws" }
+  broker --> q4@{ shape: das, label: "transformed.avg" }
+
+  q1 & q2 & q4 --> QueueLogger@{ shape: lin-rect, label: "Queue Logger"}
+  q3 --> Transformer@{ shape: lin-rect, label: "Transformer"}
+  Transformer -- transformed.avg transformed.std --> broker
   end
 
-  Consumer --> db@{ shape: cyl, label: "DB"}
-
-  subgraph Storing
-  db
-  end
+  QueueLogger --> log@{ shape: rect, label: "container's logs:
+  WS data 0
+  WS data 1
+  HTTP data 0
+  AVG data 0
+  WS data 2
+  ..." }
 ```
 
 
-## How to run
-#### Setup PostgreSQL
-Set the following PG superuser variables in `deploy/initdb/.env`
+## How to run it
 ```
-POSTGRES_PORT=
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-POSTGRES_DB=db_orders
-```
-#### Setup Binance API connection
-Set the following variables in `.env`
-```
-BINANCE_API_KEY=
-BINANCE_API_SECRET=
-```
-
-* Real-world sources:
-```
-docker compose --project-directory deploy --profile real-world up --build
-```
-* Simulate sources for offline testing:
-```
-docker compose --project-directory deploy --profile simulation up --build
+docker compose --project-directory deploy up --build
 ```
 
 ## How to develop
@@ -65,15 +71,15 @@ docker compose --project-directory deploy --profile simulation up --build
 │   └── docker-compose.yml
 |
 └── src
-    ├── analyst: an example of complex consumer
+    ├── commons
     │
-    ├── commons: definitions shared by more than one service
+    ├── interfaces
     │
-    ├── interfaces: definitions of services to be made concrete
+    ├── queue_logger: a simple consumer logging the received messages 
     │
-    ├── queue_logger: an example of simple consumer
-    │
-    └── server: for simulations
+    ├── transformer: a consumer evaluating some statistics of incoming data
+    |
+    └── server: WS or HTTP sources
 ```
 
 

@@ -2,11 +2,12 @@
 Consumer interfaces
 """
 
+import json
 from abc import ABC, abstractmethod
 from time import sleep
-from typing import Any
+from typing import Any, Dict
 
-from interfaces.broker import Broker
+from interfaces.message_broker import Broker
 
 
 class Consumer(ABC):
@@ -33,7 +34,7 @@ class rabbitMQConsumer(Consumer):
     """
 
     @abstractmethod
-    def _action(self, data: Any) -> Any:
+    def _action(self, message: Dict[str, Any]) -> Any:
         """
         This is the consuming action once the message is fetched from the queue
         """
@@ -49,7 +50,7 @@ class rabbitMQConsumer(Consumer):
             RabbitMQ dependent callback
             """
             del channel, method, properties
-            self._action(body.decode("utf-8"))
+            self._action(json.loads(body))
             sleep(self.sleep)
 
         self.broker.get(callback=callback_fun)

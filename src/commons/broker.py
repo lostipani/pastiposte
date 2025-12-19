@@ -1,9 +1,9 @@
-from interfaces.broker import Broker
+from interfaces.message_broker import Broker
 from commons.configuration import Configuration
 
 config = Configuration()
 broker = Broker.factory(
-    backend="rabbitmq",
+    backend=config["backend"],
     host=config.get("host"),
     exchange=config.get("exchange"),
     exchange_type=config.get("exchange_type"),

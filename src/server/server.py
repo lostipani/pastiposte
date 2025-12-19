@@ -1,7 +1,5 @@
-import os
-import random
 import asyncio
-from typing import Dict
+import json
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, status
@@ -9,21 +7,20 @@ from fastapi.websockets import WebSocketDisconnect
 
 from commons.configuration import Configuration
 from commons.logger import logger
+from server.data_generator import gauss_list, char_scalar
 
 app = FastAPI()
 config = Configuration()
 
-
-def producer() -> Dict[str, float]:
-    return {"value": random.gauss(0, 1)}
+LIST_LEN = 10
 
 
 @app.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket):
     await websocket.accept()
     while True:
-        data = producer()
-        logger.info(data)
+        data = gauss_list(LIST_LEN)
+        logger.debug(data)
         try:
             await websocket.send_json(data)
         except WebSocketDisconnect:
@@ -31,9 +28,11 @@ async def ws_endpoint(websocket: WebSocket):
         await asyncio.sleep(config["sleep"])
 
 
-@app.get("/http")
+@app.get("/http", status_code=status.HTTP_200_OK)
 async def http_endpoint():
-    return producer()
+    data = char_scalar()
+    logger.debug(data)
+    return json.dumps(data)
 
 
 @app.get(
@@ -41,7 +40,7 @@ async def http_endpoint():
     status_code=status.HTTP_200_OK,
 )
 async def healthcheck():
-    return {"value": 0}
+    return True
 
 
 if __name__ == "__main__":
