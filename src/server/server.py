@@ -7,7 +7,7 @@ from fastapi.websockets import WebSocketDisconnect
 
 from commons.configuration import Configuration
 from commons.logger import logger
-from server.data_generator import gauss_list, char_scalar
+from server.data_generator import gauss_list, char_scalar, structured_data
 
 app = FastAPI()
 config = Configuration()
@@ -20,6 +20,19 @@ async def ws_endpoint(websocket: WebSocket):
     await websocket.accept()
     while True:
         data = gauss_list(LIST_LEN)
+        logger.debug(data)
+        try:
+            await websocket.send_json(data)
+        except WebSocketDisconnect:
+            break
+        await asyncio.sleep(config["sleep"])
+
+
+@app.websocket("/ws/structured_data")
+async def ws_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = structured_data()
         logger.debug(data)
         try:
             await websocket.send_json(data)

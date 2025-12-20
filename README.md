@@ -131,8 +131,8 @@ classDiagram
 classDiagram
     class Consumer
     <<interface>> Consumer
-    Consumer <|.. rabbitMQConsumer
-    class rabbitMQConsumer{
+    Consumer <|.. RabbitMQConsumer
+    class RabbitMQConsumer{
         +consume()
     }
 ```

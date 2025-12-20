@@ -44,6 +44,29 @@ services:
       server:
         condition: service_healthy
 
+  listener-ws-structured:
+    annotations:
+      description: "websocket connection to source for structured data"
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "ws://server:12345/ws/structured_data"
+      SLEEP: 0
+      BROKER_BACKEND: "rabbitmq"
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_OUT: "source.ws.structured_data"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+
   listener-http:
     annotations:
       description: "HTTP requests to source"

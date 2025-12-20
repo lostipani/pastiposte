@@ -28,7 +28,7 @@ class Consumer(ABC):
         pass
 
 
-class rabbitMQConsumer(Consumer):
+class RabbitMQConsumer(Consumer):
     """
     Interface class for a RabbitMQ dependant consumer
     """
