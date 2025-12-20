@@ -104,7 +104,7 @@ services:
       BROKER_HOST: "rabbitmq"
       BROKER_EXCHANGE: "exchange"
       BROKER_EXCHANGE_TYPE: "topic"
-      BROKER_ROUTING_KEY_IN: "source.*, transformed.avg"
+      BROKER_ROUTING_KEY_IN: "source.#, transformed.avg"
       LOG_LEVEL: "INFO"
     depends_on:
       rabbitmq:

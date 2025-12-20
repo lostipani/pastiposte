@@ -7,43 +7,51 @@ and pushes it to a message passing `Broker` facility. One or more `Consumer`s
 access the data to operate on it.
 
 In the here presented implementation:
-* Endpoint `/ws` produces a list of Normally distributed floats.
-* Endpoint `/http` produces a scalar character uniformely distributed.
+* The endpoint `/ws` produces a list of Normally distributed floats.
+* The endpoint `/ws/structured_data` produces random values based on a SQL model as defined in `src/models`.
+* The endpoint `/http` produces a scalar character uniformely distributed.
 * The `Broker` is an instance of RabbitMQ.
 * A consumer `Queue Logger` retrieves data from the broker and logs it.
 * A consumer `Transformer` evaluates some statistics on some of the data, and
 sends it back to the broker.
+* A consumer `Loader` store the structured data into a DB.
 ```mermaid
-flowchart LR
+flowchart TD
   subgraph Sources
   sourceHTTP@{ shape: lean-r, label: "source HTTP" }
   sourceWS@{ shape: lean-r, label: "source WS" }
   end
 
   subgraph **Pastiposte**
-  listenerHTTP@{ shape: lin-rect, label: "Listener HTTP" }
-  listenerWS@{ shape: lin-rect, label: "Listener WS" }
+  listenerHTTP@{ shape: lin-rect, label: "Listener /http" }
+  listenerWS@{ shape: lin-rect, label: "Listener /ws" }
+  listenerWSStruct@{ shape: lin-rect, label: "Listener /ws/structured_data" }
   listenerHTTP -->  sourceHTTP
   listenerWS <--> sourceWS
+  listenerWSStruct <--> sourceWS
   listenerHTTP -- source.http --> broker@{ shape: hex, label: "Broker" }
   listenerWS -- source.ws --> broker@{ shape: hex, label: "Broker" }
+  listenerWSStruct -- source.ws.structured_data --> broker@{ shape: hex, label: "Broker" }
 
   broker --> q1@{ shape: das, label: "source.ws" }
   broker --> q2@{ shape: das, label: "source.http" }
   broker --> q3@{ shape: das, label: "source.ws" }
+  broker --> q5@{ shape: das, label: "source.ws.structured_data" }
   broker --> q4@{ shape: das, label: "transformed.avg" }
 
-  q1 & q2 & q4 --> QueueLogger@{ shape: lin-rect, label: "Queue Logger"}
-  q3 --> Transformer@{ shape: lin-rect, label: "Transformer"}
+  q1 & q2 & q4 & q5 --> QueueLogger@{ shape: lin-rect, label: "Queue Logger" }
+  q3 --> Transformer@{ shape: lin-rect, label: "Transformer" }
   Transformer -- transformed.avg transformed.std --> broker
+  q5 --> Loader@{ shape: lin-rect, label: "Loader" }
   end
 
+  Loader --> DB@{ shape: db, label: "DB" }
   QueueLogger --> log@{ shape: rect, label: "container's logs:
   WS data 0
   WS data 1
   HTTP data 0
   AVG data 0
-  WS data 2
+  WS struct. data 0
   ..." }
 ```
 
