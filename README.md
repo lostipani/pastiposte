@@ -16,7 +16,7 @@ In the here presented implementation:
 sends it back to the broker.
 * A consumer `Loader` store the structured data into a DB.
 ```mermaid
-flowchart TD
+flowchart LR
   subgraph Sources
   sourceHTTP@{ shape: lean-r, label: "source HTTP" }
   sourceWS@{ shape: lean-r, label: "source WS" }
@@ -39,19 +39,22 @@ flowchart TD
   broker --> q5@{ shape: das, label: "source.ws.structured_data" }
   broker --> q4@{ shape: das, label: "transformed.avg" }
 
-  q1 & q2 & q4 & q5 --> QueueLogger@{ shape: lin-rect, label: "Queue Logger" }
+  q1 & q2 & q4 --> QueueLogger@{ shape: lin-rect, label: "Queue Logger" }
   q3 --> Transformer@{ shape: lin-rect, label: "Transformer" }
   Transformer -- transformed.avg transformed.std --> broker
   q5 --> Loader@{ shape: lin-rect, label: "Loader" }
   end
 
+  subgraph Persistence
   Loader --> DB@{ shape: db, label: "DB" }
+  end
+  
   QueueLogger --> log@{ shape: rect, label: "container's logs:
   WS data 0
   WS data 1
   HTTP data 0
   AVG data 0
-  WS struct. data 0
+  WS data 2
   ..." }
 ```
 
