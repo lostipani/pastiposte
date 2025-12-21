@@ -44,6 +44,29 @@ services:
       server:
         condition: service_healthy
 
+  listener-ws-structured:
+    annotations:
+      description: "websocket connection to source for structured data"
+    build:
+      context: ../
+      dockerfile: build/listener/Dockerfile
+    networks:
+      - local-network
+    environment:
+      URL: "ws://server:12345/ws/structured_data"
+      SLEEP: 0
+      BROKER_BACKEND: "rabbitmq"
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_OUT: "source.ws.structured_data"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+
   listener-http:
     annotations:
       description: "HTTP requests to source"
@@ -86,8 +109,6 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      server:
-        condition: service_healthy
 
   transformer:
     annotations:
@@ -109,7 +130,26 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      server:
+
+  loader:
+    annotations:
+      description: "Store structured data in DB"
+    build:
+      context: ../
+      dockerfile: build/loader/Dockerfile
+    networks:
+      - local-network
+    environment:
+      SLEEP: 0
+      DB_URL: "postgresql://postgres:postgres@postgres-DB:5432/pastiposte"
+      BROKER_BACKEND: "rabbitmq"
+      BROKER_HOST: "rabbitmq"
+      BROKER_EXCHANGE: "exchange"
+      BROKER_EXCHANGE_TYPE: "topic"
+      BROKER_ROUTING_KEY_IN: "source.ws.structured_data"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      rabbitmq:
         condition: service_healthy
 
   rabbitmq:
@@ -122,6 +162,25 @@ services:
       - "35672:5672"
     healthcheck:
       test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      start_period: 20s
+      retries: 3
+
+  postgres-DB:
+    annotations:
+      description: "DBRMS"
+    image: postgres:alpine
+    networks:
+      - local-network
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=pastiposte
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: pg_isready -U postgres
       interval: 30s
       timeout: 30s
       start_period: 20s

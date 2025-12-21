@@ -3,13 +3,13 @@ from statistics import mean, stdev, StatisticsError
 from typing import Any
 
 from interfaces.message_broker import Broker
-from interfaces.consumer import rabbitMQConsumer
+from interfaces.consumer import RabbitMQConsumer
 from commons.logger import logger
 from commons.configuration import Configuration
 from commons.broker import broker
 
 
-class Transformer(rabbitMQConsumer):
+class Transformer(RabbitMQConsumer):
 
     def _action(self, message: Any):
         message = json.loads(message)
